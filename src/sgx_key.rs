@@ -29,7 +29,7 @@ pub async fn get_secret_key_dcap() -> Result<Secret, String> {
 }
 
 pub async fn get_did(config_version: u16) -> (u16, Vec<u8>) {
-    let online_sk = ONLINESK.read().await.as_ref().unwrap().clone();
+    let online_sk = ONLINESK.read().unwrap().as_ref().unwrap().clone();
     let online_pk: ringvrf::ed25519::Public = online_sk.into();
     (config_version, online_pk.as_bytes())
 }

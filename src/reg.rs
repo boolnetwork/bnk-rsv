@@ -21,7 +21,7 @@ pub async fn register_sgx_2(
     let key_pair = Keypair::from_secret(&secret_key);
     let pk_vec = public_key.as_bytes();
 
-    *ONLINESK.write().await = Some(secret_key);
+    *ONLINESK.write().unwrap() = Some(secret_key);
 
     #[cfg(feature = "occlum-enclave")]
     let (report, enclave_hash) = {
@@ -99,8 +99,8 @@ pub async fn register_sgx_2(
     Ok(())
 }
 
-pub async fn sign_with_device_sgx_key(msg: Vec<u8>) -> Result<Vec<u8>, String> {
-    let key_pair = Keypair::from_secret(ONLINESK.read().await.as_ref().unwrap());
+pub fn sign_with_device_sgx_key(msg: Vec<u8>) -> Result<Vec<u8>, String> {
+    let key_pair = Keypair::from_secret(ONLINESK.read().unwrap().as_ref().unwrap());
     let msg = sha3_hash256(&msg);
     let sig = key_pair
         .sign(&msg)
@@ -111,8 +111,8 @@ pub async fn sign_with_device_sgx_key(msg: Vec<u8>) -> Result<Vec<u8>, String> {
     Ok(sig)
 }
 
-pub async fn verify_sig(msg: Vec<u8>, signature: Vec<u8>, pubkey: Vec<u8>) -> Result<bool, String> {
-    let key_pair = Keypair::from_secret(ONLINESK.read().await.as_ref().unwrap());
+pub fn verify_sig(msg: Vec<u8>, signature: Vec<u8>, pubkey: Vec<u8>) -> Result<bool, String> {
+    let key_pair = Keypair::from_secret(ONLINESK.read().unwrap().as_ref().unwrap());
     let msg = sha3_hash256(&msg);
 
     if pubkey != key_pair.public.as_bytes() {

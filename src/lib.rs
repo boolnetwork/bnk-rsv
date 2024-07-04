@@ -5,7 +5,8 @@ mod utils;
 
 use lazy_static::lazy_static;
 use ringvrf::ed25519::Secret;
-use tokio::sync::RwLock;
+// use tokio::sync::RwLock;
+use std::sync::RwLock;
 
 lazy_static! {
     pub static ref ONLINESK: RwLock<Option<Secret>> = RwLock::new(None);
