@@ -1,7 +1,7 @@
 use node_visitor::node_proxy;
 use pallets_api::bool::runtime_types::pallet_facility::pallet::DIdentity;
 use pallets_api::client::SubClient;
-use ringvrf::ed25519::{Keypair, Public, Signature};
+use ringvrf::ed25519::{Keypair, Public, Secret, Signature};
 
 use crate::sgx_key::{get_did, get_secret_key};
 use crate::utils::sha3_hash256;
@@ -120,6 +120,24 @@ pub fn verify_sig(msg: Vec<u8>, signature: Vec<u8>, pubkey: Vec<u8>) -> Result<b
     }
 
     match key_pair.verify(&msg, &Signature::from_bytes(&signature).unwrap()) {
+        Ok(()) => return Ok(true),
+        Err(e) => return Err("verify error {:?e}".to_string()),
+    }
+}
+
+pub fn verify_sig_from_string_public(
+    msg: Vec<u8>,
+    signature: Vec<u8>,
+    pubkey: String,
+) -> Result<bool, String> {
+    let msg = sha3_hash256(&msg);
+
+    let keypair = Keypair {
+        secret: Secret::random(), // TODO:: fix it 
+        public: Public::from_bytes(&hex::decode(pubkey).unwrap()).unwrap(),
+    };
+
+    match keypair.verify(&msg, &Signature::from_bytes(&signature).unwrap()) {
         Ok(()) => return Ok(true),
         Err(e) => return Err("verify error {:?e}".to_string()),
     }

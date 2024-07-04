@@ -4,8 +4,7 @@ mod sgx_key;
 mod utils;
 
 use lazy_static::lazy_static;
-use ringvrf::ed25519::Secret;
-// use tokio::sync::RwLock;
+use ringvrf::ed25519::{Keypair, Secret};
 use std::sync::RwLock;
 
 lazy_static! {
@@ -14,4 +13,26 @@ lazy_static! {
 }
 
 pub use mock::{register_sgx_test, sign_with_device_sgx_key_test, verify_sig_test};
-pub use reg::{register_sgx_2, sign_with_device_sgx_key, verify_sig};
+pub use reg::{
+    register_sgx_2, sign_with_device_sgx_key, verify_sig, verify_sig_from_string_public,
+};
+
+pub enum KeyType {
+    SGX,
+    TEST,
+}
+
+pub fn get_public(key_type: KeyType) -> String {
+    match key_type {
+        KeyType::SGX => {
+            let key_pair = Keypair::from_secret(ONLINESK.read().unwrap().as_ref().unwrap());
+            let pubkey = key_pair.public.as_bytes();
+            hex::encode(pubkey)
+        }
+        KeyType::TEST => {
+            let key_pair = Keypair::from_secret(TESTSK.read().unwrap().as_ref().unwrap());
+            let pubkey = key_pair.public.as_bytes();
+            hex::encode(pubkey)
+        }
+    }
+}

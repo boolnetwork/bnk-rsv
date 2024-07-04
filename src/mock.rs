@@ -47,3 +47,21 @@ fn test_sign_verify() {
     let result = verify_sig(msg, sig, pk_vec).unwrap();
     assert!(result)
 }
+
+#[test]
+fn test_sign_verify_2() {
+    use crate::ONLINESK;
+    use crate::*;
+
+    let secret_key = Secret::from_bytes(&[8u8; 32]).unwrap();
+    *ONLINESK.write().unwrap() = Some(secret_key);
+
+    let msg = vec![8u8, 7u8, 9u8];
+
+    let sig = sign_with_device_sgx_key(msg.clone()).unwrap();
+
+    let public_string = get_public(KeyType::SGX);
+
+    let result = verify_sig_from_string_public(msg, sig, public_string).unwrap();
+    assert!(result)
+}
