@@ -1,10 +1,11 @@
 use node_visitor::node_proxy;
 use pallets_api::bool::runtime_types::pallet_facility::pallet::DIdentity;
 use pallets_api::client::SubClient;
-use ringvrf::ed25519::{Keypair, Public, Secret, Signature};
+use ringvrf::ed25519::{Keypair, Public, Signature};
 
-use crate::sgx_key::{get_secret_key, get_did};
+use crate::sgx_key::{get_did, get_secret_key};
 use crate::utils::sha3_hash256;
+use crate::ONLINESK;
 
 pub async fn register_sgx_2(
     subclient_url: String,

@@ -1,9 +1,8 @@
-
-use ringvrf::ed25519::{Keypair, Public, Secret, Signature};
-use crate::{TESTSK, ONLINESK};
 use crate::utils::sha3_hash256;
+use crate::TESTSK;
+use ringvrf::ed25519::{Keypair, Secret, Signature};
 
-pub async fn register_sgx_test(){
+pub async fn register_sgx_test() {
     let secret_key = Secret::random();
     *TESTSK.write().await = Some(secret_key);
 }
@@ -32,6 +31,10 @@ pub async fn verify_sig_test(msg: Vec<u8>, signature: Vec<u8>) -> Result<bool, S
 
 #[tokio::test]
 async fn test_sign_verify() {
+    use crate::ONLINESK;
+    use crate::*;
+    use ringvrf::ed25519::Public;
+
     let secret_key = Secret::from_bytes(&[8u8; 32]).unwrap();
     *ONLINESK.write().await = Some(secret_key);
 
