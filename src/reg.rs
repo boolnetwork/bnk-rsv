@@ -121,6 +121,6 @@ pub async fn verify_sig(msg: Vec<u8>, signature: Vec<u8>, pubkey: Vec<u8>) -> Re
 
     match key_pair.verify(&msg, &Signature::from_bytes(&signature).unwrap()) {
         Ok(()) => return Ok(true),
-        Err(_) => return Err("".to_string()),
+        Err(e) => return Err("verify error {:?e}".to_string()),
     }
 }
