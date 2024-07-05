@@ -1,0 +1,4 @@
+[submodule "carbon"]
+	path = carbon
+	url = https://github.com/ABMatrix/carbon
+	branch = main-v0.10.10

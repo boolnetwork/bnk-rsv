@@ -10,13 +10,13 @@ lazy_static = "1.5.0"
 sha3 = "0.8.2"
 log = { version = "0.4.18", default-features = false }
 
-pallets-api = { git = "https://github.com/ABMatrix/carbon", branch = "main-v0.10.10" }
-ringvrf =  { git = "https://github.com/ABMatrix/carbon", branch = "main-v0.10.10" }
-occlum-ra =  { git = "https://github.com/ABMatrix/carbon", branch = "main-v0.10.10" }
-node-visitor = { git = "https://github.com/ABMatrix/carbon", branch = "main-v0.10.10" }
+pallets-api = { path = "./carbon/node/pallets-api" }
+ringvrf =  { path = "./carbon/extern/rvrf" }
+occlum-ra =  { path = "./carbon/extern/occlum-ra/occlum-ra" }
+node-visitor = { path = "./carbon/servers/frames/node-visitor" }
 
-[patch.crates-io]
-ring = { git = "https://github.com/sgx-test/ring" ,default-features = false, features = ["alloc"] }
+#[patch.crates-io]
+#ring = { git = "https://github.com/sgx-test/ring" ,default-features = false, features = ["alloc"] }
 
 [features]
 default = ["occlum-enclave"]
