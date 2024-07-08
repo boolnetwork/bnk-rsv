@@ -3,7 +3,7 @@ use pallets_api::bool::runtime_types::pallet_facility::pallet::DIdentity;
 use pallets_api::client::SubClient;
 use ringvrf::ed25519::{Keypair, Public, Secret, Signature};
 
-use crate::sgx_key::{get_did, get_secret_key};
+use crate::sgx_key::{get_did, get_secret_key_dcap};
 use crate::utils::sha3_hash256;
 use crate::ONLINESK;
 
@@ -16,7 +16,7 @@ pub async fn register_sgx_2(
         SubClient::new_from_ecdsa_sk(subclient_url.to_string(), None, Some(subclient_warn_time))
             .await?;
 
-    let secret_key = get_secret_key().await.map_err(|e| e.to_string())?;
+    let secret_key = get_secret_key_dcap().await.map_err(|e| e.to_string())?;
     let public_key: Public = secret_key.into();
     let key_pair = Keypair::from_secret(&secret_key);
     let pk_vec = public_key.as_bytes();
