@@ -10,10 +10,10 @@ lazy_static = "1.5.0"
 sha3 = "0.8.2"
 log = { version = "0.4.18", default-features = false }
 
-pallets-api = { git = "https://github.com/ABMatrix/carbon", branch = "main-v0.10.10" }
-ringvrf =  { git = "https://github.com/ABMatrix/carbon", branch = "main-v0.10.10" }
-occlum-ra =  { git = "https://github.com/ABMatrix/carbon", branch = "main-v0.10.10" }
-node-visitor = { git = "https://github.com/ABMatrix/carbon", branch = "main-v0.10.10" }
+pallets-api = { git = "https://github.com/ABMatrix/carbon", branch = "feature-incentive" }
+ringvrf =  { git = "https://github.com/ABMatrix/carbon", branch = "feature-incentive" }
+occlum-ra =  { git = "https://github.com/ABMatrix/carbon", branch = "feature-incentive" }
+node-visitor = { git = "https://github.com/ABMatrix/carbon", branch = "feature-incentive" }
 
 [patch.crates-io]
 ring = { git = "https://github.com/sgx-test/ring" ,default-features = false, features = ["alloc"] }
