@@ -1813,7 +1813,7 @@ dependencies = [
 [[package]]
 name = "fp-account"
 version = "1.0.0-dev"
-source = "git+https://github.com/boolnetwork/frontier.git?branch=update-evm-engine#dd5d50db8af93451525893285f5b22f04ad03948"
+source = "git+https://github.com/boolnetwork/frontier.git?branch=compatible-with-eip1559-header#bf4883f86241dfe370434fac3747eb83fefa9979"
 dependencies = [
  "hex",
  "impl-serde 0.4.0",
@@ -1832,7 +1832,7 @@ dependencies = [
 [[package]]
 name = "fp-evm"
 version = "3.0.0-dev"
-source = "git+https://github.com/boolnetwork/frontier.git?branch=update-evm-engine#dd5d50db8af93451525893285f5b22f04ad03948"
+source = "git+https://github.com/boolnetwork/frontier.git?branch=compatible-with-eip1559-header#bf4883f86241dfe370434fac3747eb83fefa9979"
 dependencies = [
  "evm",
  "frame-support",
@@ -3350,7 +3350,7 @@ dependencies = [
  "pem",
  "rand 0.8.5",
  "rand_core 0.5.1",
- "ring 0.17.8",
+ "ring 0.16.20",
  "rustls 0.19.1",
  "serde",
  "serde_json",
@@ -3443,7 +3443,7 @@ dependencies = [
 [[package]]
 name = "pallet-evm"
 version = "6.0.0-dev"
-source = "git+https://github.com/boolnetwork/frontier.git?branch=update-evm-engine#dd5d50db8af93451525893285f5b22f04ad03948"
+source = "git+https://github.com/boolnetwork/frontier.git?branch=compatible-with-eip1559-header#bf4883f86241dfe370434fac3747eb83fefa9979"
 dependencies = [
  "environmental",
  "evm",
