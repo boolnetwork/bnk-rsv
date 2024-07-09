@@ -73,14 +73,14 @@ pub async fn register_sgx_2(
     let msg = [report.clone(), current_version.to_be_bytes().to_vec()].concat();
     let signature = key_pair
         .sign(&msg)
-        .map_err(|e| "ed25519 sign {:?e}".to_string())?
+        .map_err(|e| format!("ed25519 sign {e:?}"))?
         .as_bytes()
         .to_vec();
     let config_owner = device_owner.clone();
     log::info!("device owner: {}", config_owner);
 
     // Check whether the device has been registered or registered by others
-    let did = get_did(config_version).await;
+    let did = get_did(current_version).await;
     let device_id = DIdentity {
         version: did.0,
         pk: did.1,
@@ -93,7 +93,7 @@ pub async fn register_sgx_2(
         if dv.state == DeviceState::Working || dv.state == DeviceState::Exiting {
             if !verify_enclave_hash(&sub_client, dv.version, enclave_hash.clone()).await? {
                 return Err(
-                    "Verify working device's enclave hash failed: {:?enclave_hash}".to_string(),
+                    format!("Verify working device's enclave hash failed: {enclave_hash:?}"),
                 );
             }
         }
@@ -103,8 +103,7 @@ pub async fn register_sgx_2(
                 // update version
                 if !verify_enclave_hash(&sub_client, current_version, enclave_hash.clone()).await? {
                     return Err(
-                        "update version failed due to invalid enclave_hash: {:?enclave_hash}"
-                            .to_string(),
+                        format!("update version failed due to invalid enclave_hash: {enclave_hash:?}"),
                     );
                 }
                 log::info!(target: "key_server", "device: {:?} will update version to bool", pk);
@@ -132,8 +131,7 @@ pub async fn register_sgx_2(
             if let Some(owner_vote) = current_votes.iter().find(|v| v.0 == dv.owner) {
                 if owner_vote.1 != 0 {
                     return Err(
-                        "[{:?pk}] device owner {:?dv.owner} has current vote {:?owner_vote.1}"
-                            .to_string(),
+                        format!("[{pk:?}] device owner {dv.owner:?} has current vote {owner_vote.1:?}"),
                     );
                 }
             }
@@ -145,8 +143,7 @@ pub async fn register_sgx_2(
             if let Some(owner_vote) = current_votes.iter().find(|v| v.0 == dv.owner) {
                 if owner_vote.1 != 0 {
                     return Err(
-                        "[{:?pk}] device owner {:?dv.owner} has current vote {:?owner_vote.1}"
-                            .to_string(),
+                        format!("[{pk:?}] device owner {dv.owner:?} has current vote {owner_vote.1:?}"),
                     );
                 }
             }
@@ -160,7 +157,7 @@ pub async fn register_sgx_2(
     }
     tokio::spawn(async move {
         loop {
-            let mut did = get_did(config_version).await;
+            let mut did = get_did(current_version).await;
             did.0 = current_version;
             match node_proxy::call_register_v2(
                 &sub_client,
