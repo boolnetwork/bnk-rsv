@@ -131,7 +131,7 @@ pub async fn register_sgx_2(
             if let Some(owner_vote) = current_votes.iter().find(|v| v.0 == dv.owner) {
                 if owner_vote.1 != 0 {
                     return Err(
-                        format!("[{pk:?}] device owner {dv.owner:?} has current vote {owner_vote.1:?}"),
+                        format!("[{pk:?}] device owner {0:?} has current vote {1:?}", dv.owner, owner_vote.1),
                     );
                 }
             }
@@ -143,7 +143,7 @@ pub async fn register_sgx_2(
             if let Some(owner_vote) = current_votes.iter().find(|v| v.0 == dv.owner) {
                 if owner_vote.1 != 0 {
                     return Err(
-                        format!("[{pk:?}] device owner {dv.owner:?} has current vote {owner_vote.1:?}"),
+                        format!("[{pk:?}] device owner {0:?} has current vote {1:?}", dv.owner, owner_vote.1),
                     );
                 }
             }
@@ -152,7 +152,7 @@ pub async fn register_sgx_2(
     // try to register device
     if !verify_enclave_hash(&sub_client, current_version, enclave_hash.clone()).await? {
         return Err(
-            "register device failed due to invalid enclave_hash: {:?enclave_hash}".to_string(),
+            format!("register device failed due to invalid enclave_hash: {enclave_hash:?}"),
         );
     }
     tokio::spawn(async move {
@@ -205,7 +205,7 @@ pub fn sign_with_device_sgx_key(msg: Vec<u8>) -> Result<Vec<u8>, String> {
     let msg = sha3_hash256(&msg);
     let sig = key_pair
         .sign(&msg)
-        .map_err(|_| "sign error".to_string())?
+        .map_err(|e| format!("sign error {e:?}"))?
         .as_bytes()
         .to_vec();
 
@@ -222,7 +222,7 @@ pub fn verify_sig(msg: Vec<u8>, signature: Vec<u8>, pubkey: Vec<u8>) -> Result<b
 
     match key_pair.verify(&msg, &Signature::from_bytes(&signature).unwrap()) {
         Ok(()) => return Ok(true),
-        Err(e) => return Err("verify error {:?e}".to_string()),
+        Err(e) => return Err(format!("verify error {e:?}")),
     }
 }
 
@@ -240,6 +240,6 @@ pub fn verify_sig_from_string_public(
 
     match keypair.verify(&msg, &Signature::from_bytes(&signature).unwrap()) {
         Ok(()) => return Ok(true),
-        Err(e) => return Err("verify error {:?e}".to_string()),
+        Err(e) => return Err(format!("verify error {e:?}")),
     }
 }
