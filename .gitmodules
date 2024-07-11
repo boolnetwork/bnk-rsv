@@ -1,4 +1,4 @@
 [submodule "carbon"]
 	path = carbon
 	url = https://github.com/ABMatrix/carbon
-	branch = feature-incentive
+	branch = feature-incentive-rpcreg
