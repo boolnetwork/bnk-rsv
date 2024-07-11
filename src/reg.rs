@@ -1,17 +1,6 @@
-use node_visitor::pallets_api::{
-    device_votes_for_current_epoch, device_votes_for_next_epoch, hash_to_version,
-    update_device_version, version_list, BoolSubClient,
-};
-use node_visitor::{
-    node_proxy,
-    pallets_api::{
-        self,
-        bool::runtime_types::{
-            pallet_facility::pallet::DIdentity, pallet_mining::pallet::DeviceState,
-        },
-    },
-};
 use pallets_api::client::SubClient;
+use pallets_api::version_list;
+use pallets_api::{self, bool::runtime_types::pallet_facility::pallet::DIdentity};
 use ringvrf::ed25519::{Keypair, Public, Secret, Signature};
 
 use crate::sgx_key::{get_did, get_secret_key_dcap};
@@ -73,7 +62,7 @@ pub async fn register_sgx_2(
     let msg = [report.clone(), current_version.to_be_bytes().to_vec()].concat();
     let signature = key_pair
         .sign(&msg)
-        .map_err(|e| "ed25519 sign {:?e}".to_string())?
+        .map_err(|e| format!("ed25519 sign {e:?}"))?
         .as_bytes()
         .to_vec();
     let config_owner = device_owner.clone();
@@ -85,75 +74,15 @@ pub async fn register_sgx_2(
         version: did.0,
         pk: did.1,
     };
-    let device = pallets_api::device_info_v2(&sub_client, device_id.pk.clone(), None).await;
+    let device = pallets_api::device_info_rpc(&sub_client, device_id.pk.clone(), None).await;
     // need register: owner != sender && owner's lock is zero && device's state == standby
-    if let Some(dv) = device {
-        let mut update_version = dv.version;
-        let pk = "0x".to_string() + &hex::encode(&device_id.pk);
-        if dv.state == DeviceState::Working || dv.state == DeviceState::Exiting {
-            if !verify_enclave_hash(&sub_client, dv.version, enclave_hash.clone()).await? {
-                return Err(
-                    "Verify working device's enclave hash failed: {:?enclave_hash}".to_string(),
-                );
-            }
-        }
-        if "0x".to_string() + &hex::encode(dv.owner.0).to_lowercase() == config_owner.to_lowercase()
-        {
-            if dv.state == DeviceState::Standby && dv.version != current_version {
-                // update version
-                if !verify_enclave_hash(&sub_client, current_version, enclave_hash.clone()).await? {
-                    return Err(
-                        "update version failed due to invalid enclave_hash: {:?enclave_hash}"
-                            .to_string(),
-                    );
-                }
-                log::info!(target: "key_server", "device: {:?} will update version to bool", pk);
-                update_version = current_version;
-                update_device_version(
-                    &sub_client,
-                    report.clone(),
-                    current_version,
-                    signature.clone(),
-                )
-                .await
-                .map_err(|_| "update_device_version failed".to_string())?;
-            } else if dv.state == DeviceState::Standby {
-                if !verify_enclave_hash(&sub_client, dv.version, enclave_hash.clone()).await? {
-                    return Err("verify_enclave_hash failed".to_string());
-                }
-            }
-            log::info!(target: "key_server", "device: {:?} has been registered for account: {:?}", pk, config_owner);
-            return Ok(update_version);
-        }
-
-        if let Some(current_votes) =
-            device_votes_for_current_epoch(&sub_client, device_id.pk.clone(), None).await
-        {
-            if let Some(owner_vote) = current_votes.iter().find(|v| v.0 == dv.owner) {
-                if owner_vote.1 != 0 {
-                    return Err(
-                        "[{:?pk}] device owner {:?dv.owner} has current vote {:?owner_vote.1}"
-                            .to_string(),
-                    );
-                }
-            }
-        }
-
-        if let Some(current_votes) =
-            device_votes_for_next_epoch(&sub_client, device_id.pk.clone(), None).await
-        {
-            if let Some(owner_vote) = current_votes.iter().find(|v| v.0 == dv.owner) {
-                if owner_vote.1 != 0 {
-                    return Err(
-                        "[{:?pk}] device owner {:?dv.owner} has current vote {:?owner_vote.1}"
-                            .to_string(),
-                    );
-                }
-            }
-        }
+    if let Some(_) = device {
+        return Err("registered".to_string());
     }
     // try to register device
-    if !verify_enclave_hash(&sub_client, current_version, enclave_hash.clone()).await? {
+    if !crate::utils::verify_enclave_hash(&sub_client, current_version, enclave_hash.clone())
+        .await?
+    {
         return Err(
             "register device failed due to invalid enclave_hash: {:?enclave_hash}".to_string(),
         );
@@ -162,7 +91,7 @@ pub async fn register_sgx_2(
         loop {
             let mut did = get_did(config_version).await;
             did.0 = current_version;
-            match node_proxy::call_register_v2(
+            match crate::utils::call_register_rpc(
                 &sub_client,
                 &config_owner,
                 did,
@@ -181,26 +110,6 @@ pub async fn register_sgx_2(
         }
     });
     Ok(current_version)
-}
-
-pub async fn verify_enclave_hash(
-    sub_client: &BoolSubClient,
-    version: u16,
-    enclave_hash: Vec<u8>,
-) -> Result<bool, String> {
-    if version == 0 {
-        return Ok(true);
-    }
-    let online_enclave_list = hash_to_version(sub_client, version, None)
-        .await
-        .ok_or("hash_to_version failed".to_string())?;
-
-    let online_enclave_hashs: Vec<Vec<u8>> = online_enclave_list
-        .as_slice()
-        .chunks(32)
-        .map(|c| c.to_vec())
-        .collect();
-    Ok(online_enclave_hashs.contains(&enclave_hash))
 }
 
 pub fn sign_with_device_sgx_key(msg: Vec<u8>) -> Result<Vec<u8>, String> {
@@ -225,7 +134,7 @@ pub fn verify_sig(msg: Vec<u8>, signature: Vec<u8>, pubkey: Vec<u8>) -> Result<b
 
     match key_pair.verify(&msg, &Signature::from_bytes(&signature).unwrap()) {
         Ok(()) => return Ok(true),
-        Err(e) => return Err("verify error {:?e}".to_string()),
+        Err(e) => return Err(format!("verify error {e:?}")),
     }
 }
 
@@ -243,6 +152,6 @@ pub fn verify_sig_from_string_public(
 
     match keypair.verify(&msg, &Signature::from_bytes(&signature).unwrap()) {
         Ok(()) => return Ok(true),
-        Err(e) => return Err("verify error {:?e}".to_string()),
+        Err(e) => return Err(format!("verify error {e:?}")),
     }
 }

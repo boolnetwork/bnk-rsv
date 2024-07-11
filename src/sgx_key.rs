@@ -1,11 +1,13 @@
 use crate::ONLINESK;
 use ringvrf::ed25519::Secret;
 
+#[allow(dead_code)]
 #[cfg(feature = "occlum-enclave")]
 pub const SGX_KEYPOLICY_MRENCLAVE: u16 = 0x0001;
 #[cfg(feature = "occlum-enclave")]
 pub const SGX_KEYPOLICY_MRSIGNER: u16 = 0x0002;
 
+#[allow(dead_code)]
 #[cfg(feature = "occlum-enclave")]
 pub async fn get_secret_key() -> Result<Secret, String> {
     let mut identity = occlum_ra::get_fingerprint_epid(SGX_KEYPOLICY_MRSIGNER);
