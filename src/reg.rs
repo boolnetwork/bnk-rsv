@@ -47,7 +47,7 @@ pub async fn register_sgx_2(
     };
     #[cfg(not(feature = "occlum-enclave"))]
     let (report, enclave_hash) = (pk_vec.clone(), vec![0u8; 32]);
-    log::info!(
+    tracing::info!(
         "enclave hash: 0x{}, attestation: 0x{}",
         hex::encode(&enclave_hash),
         hex::encode(&report)
@@ -66,7 +66,7 @@ pub async fn register_sgx_2(
         .as_bytes()
         .to_vec();
     let config_owner = device_owner.clone();
-    log::info!("device owner: {}", config_owner);
+    tracing::info!("device owner: {}", config_owner);
 
     // Check whether the device has been registered or registered by others
     let did = get_did(config_version).await;
@@ -101,10 +101,10 @@ pub async fn register_sgx_2(
             .await
             {
                 Ok(res) => {
-                    log::info!(target: "key_server", "register sgx: {:?}", res);
+                    tracing::info!(target: "key_server", "register sgx: {:?}", res);
                     return;
                 }
-                Err(e) => log::info!(target: "key_server", "register failed for {:?}", e),
+                Err(e) => tracing::info!(target: "key_server", "register failed for {:?}", e),
             }
             tokio::time::sleep(std::time::Duration::from_secs(30)).await;
         }
