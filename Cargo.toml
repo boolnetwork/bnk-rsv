@@ -17,6 +17,9 @@ occlum-ra =  { path = "./carbon/extern/occlum-ra/occlum-ra" }
 tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
 tracing = "0.1.37"
 
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
 #[patch.crates-io]
 #ring = { git = "https://github.com/sgx-test/ring" ,default-features = false, features = ["alloc"] }
 

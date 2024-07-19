@@ -556,12 +556,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "349f9b6a179ed607305526ca489b34ad0a41aed5f7980fa90eb03160b69598fb"
 
 [[package]]
-name = "bit-vec"
-version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d2c54ff287cfc0a34f38a6b832ea1bd8e448a330b3e40a50859e6488bee07f22"
-
-[[package]]
 name = "bitcoin_hashes"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2550,7 +2544,7 @@ name = "occlum-ra"
 version = "0.1.0"
 dependencies = [
  "base64 0.9.3",
- "bit-vec 0.7.0",
+ "bit-vec",
  "chrono",
  "hex",
  "http_req",
@@ -3671,6 +3665,8 @@ dependencies = [
  "occlum-ra",
  "pallets-api",
  "ringvrf",
+ "serde",
+ "serde_json",
  "sha3 0.8.2",
  "tokio",
  "tracing",
@@ -5521,7 +5517,7 @@ name = "yasna"
 version = "0.4.0"
 source = "git+https://github.com/sgx-test/yasna.rs#26049419d490efd6f538cb73809d2d35f7dbd694"
 dependencies = [
- "bit-vec 0.6.3",
+ "bit-vec",
  "chrono",
  "num-bigint 0.4.6",
 ]
