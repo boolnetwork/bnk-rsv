@@ -139,4 +139,52 @@ mod test {
         let verify_result = verify_sgx_response(sgx_result, public_key()).unwrap();
         assert_eq!(verify_result, true);
     }
+
+    #[test]
+    pub fn helios_test() {
+        fn sign_hash_with_sgx_sk_test(input: String) -> String {
+            let sig = sign_with_device_sgx_key(input.as_bytes().to_vec()).unwrap();
+            hex::encode(sig)
+        }
+
+        let block = json!({"blocknum":"888", "hash":"0x1234", "root":"0x5678"});
+        let origin_response_1 = json!({"jsonrpc":"1.0", "result":block, "id":"curltest"});
+
+        let str = "ldjflajdfljal";
+        let origin_response_2 = json!({"jsonrpc":"1.0", "result":str, "id":"curltest"});
+
+        reg_mock();
+
+        let block_str = serde_json::to_string(&block).unwrap();
+        let sig = sign_hash_with_sgx_sk_test(block_str.clone());
+        let new_resp = json!({
+            "id": "curltest",
+            "jsonrpc": "1.0",
+            "result": json!({
+                "result": block,
+                "sig": sig
+            })
+        });
+        let new_resp = serde_json::to_string(&new_resp).unwrap();
+        let sgx_result = create_sgx_response(origin_response_1, KeyType::SGX);
+        assert_eq!(new_resp, sgx_result);
+
+        assert!(verify_sgx_response(new_resp, public_key()).unwrap());
+
+        let str_str = serde_json::to_string(&str).unwrap();
+        //let str_str = str.to_string();
+        let sig = sign_hash_with_sgx_sk_test(str_str.clone());
+        let new_resp = json!({
+            "id": "curltest",
+            "jsonrpc": "1.0",
+            "result": json!({
+                "result": str,
+                "sig": sig
+            })
+        });
+        let new_resp = serde_json::to_string(&new_resp).unwrap();
+        let sgx_result = create_sgx_response(origin_response_2, KeyType::SGX);
+        assert_eq!(new_resp, sgx_result);
+        assert!(verify_sgx_response(new_resp, public_key()).unwrap());
+    }
 }
