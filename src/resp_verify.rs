@@ -1,5 +1,5 @@
 use serde::{Serialize, Deserialize};
-use crate::{sign_with_device_sgx_key_test, sign_with_device_sgx_key, KeyType};
+use crate::{sign_with_device_sgx_key, sign_with_device_sgx_key_test, verify_sig_from_string_public, KeyType};
 use serde_json::{Value, json};
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -17,14 +17,16 @@ pub fn create_sgx_response<T: Serialize>(origin_resp: T, keytype: KeyType) -> St
             KeyType::SGX => sign_with_device_sgx_key(msg.as_bytes().to_vec()).unwrap(),
             KeyType::TEST => sign_with_device_sgx_key_test(msg.as_bytes().to_vec()).unwrap(),
         };
-        serde_json::to_string(&sig).unwrap()
+        hex::encode(&sig)
     });
 
     result_parse(origin_resp_str, sign_fn, keytype)
 }
 
 pub fn result_parse(input: String, sign_fn: Box<dyn Fn(String, KeyType) -> String>, keytype: KeyType) -> String {
+    
     let mut json_data: Value = serde_json::from_str(&input).unwrap();
+    
     if let Some(result) = json_data.get_mut("result") {
         let msg = serde_json::to_string(&result.clone()).unwrap();
 
@@ -39,45 +41,103 @@ pub fn result_parse(input: String, sign_fn: Box<dyn Fn(String, KeyType) -> Strin
     serde_json::to_string(&json_data).unwrap()
 }
 
+pub fn verify_sgx_response(sgx_response: String, public_key: String) -> Result<bool, String> {
+    
+    let (msg, sig) = sgx_result_parse(sgx_response)
+    .map_err(|e|format!("verify_sgx_response error {e:?}"))?;
+
+    let sig = hex::decode(&sig)
+    .map_err(|e|format!("verify_sgx_response error decode sig {e:?}"))?;
+
+    verify_sig_from_string_public(msg.as_bytes().to_vec(),sig, public_key)
+}
+
+fn sgx_result_parse(input: String) -> Result<(String, String), String> {
+    let json_data: Value = serde_json::from_str(&input)
+        .map_err(|e|format!("sgx_result_parse error {e:?}"))?;
+
+    if let Some(result) = json_data.get("result") {
+
+        let msg = result.get("result").ok_or("no [result]".to_string())?;
+        let msg = serde_json::to_string(&msg.clone()).unwrap();
+
+        let sig = result.get("sig").ok_or("no [sig]".to_string())?;
+        
+        return Ok((msg, sig.as_str().unwrap().to_string()));
+    };
+
+    Err("sgx_result_parse error: no [result] element".to_string())
+}
+
 #[cfg(test)]
 mod test {
     use crate::*;
-    use resp_verify::create_sgx_response;
-    use serde::{Serialize, Deserialize};
+    use resp_verify::{create_sgx_response, verify_sgx_response};
     use serde_json::json;
     use crate::ONLINESK;
-
-    #[derive(Serialize, Deserialize)]
-    struct Example<T: Serialize>{
-        jsonrpc: String,
-        result: T,
-        id: String,
-    }
 
     fn reg_mock() {
         let secret_key = Secret::from_bytes(&[8u8; 32]).unwrap();
         *ONLINESK.write().unwrap() = Some(secret_key);
     }
 
+    fn public_key() -> String{
+        get_public(KeyType::SGX)
+    }
+
     #[test]
-    fn test_parse() {
+    fn test_parse_eth_response() {
         let block = json!({"blocknum":"888", "hash":"0x1234", "root":"0x5678"});
-        let test_data = json!({"jsonrpc":"1.0", "result":block, "id":"curltest"});
+        let origin_response = json!({"jsonrpc":"1.0", "result":block, "id":"curltest"});
         
         reg_mock();
         
-        let res =  create_sgx_response(test_data, KeyType::SGX);
-        
+        let sgx_result =  create_sgx_response(origin_response, KeyType::SGX);
+        println!("sgx_result {:?}",sgx_result);
+
         let expect_result = json!({
             "id": "curltest",
             "jsonrpc": "1.0",
             "result": json!({
                 "result": block,
-                "sig": "[49,57,144,227,192,70,251,39,115,231,125,181,105,86,110,169,248,156,133,174,9,222,52,6,193,123,129,232,252,60,144,226,234,124,125,154,206,192,38,235,174,124,31,211,186,139,78,72,63,203,67,167,234,180,250,240,70,229,97,155,124,5,2,1]"
+                "sig": "313990e3c046fb2773e77db569566ea9f89c85ae09de3406c17b81e8fc3c90e2ea7c7d9acec026ebae7c1fd3ba8b4e483fcb43a7eab4faf046e5619b7c050201"
             })
         });
         
         let expect_result_str = serde_json::to_string(&expect_result).unwrap();
-        assert_eq!(expect_result_str,res);
+        assert_eq!(expect_result_str, sgx_result);
+
+        let verify_result = verify_sgx_response(sgx_result, public_key()).unwrap();
+        assert_eq!(verify_result, true);
+
     }
+
+    #[test]
+    fn test_parse_btc_response() {
+        let block = json!({"blocknum":"888", "hash":"0x1234", "root":"0x5678"});
+        let origin_response = json!({"jsonrpc":"1.0", "result":block, "error": "null" ,"id":"curltest"});
+        
+        reg_mock();
+        
+        let sgx_result =  create_sgx_response(origin_response, KeyType::SGX);
+        println!("sgx_result {:?}",sgx_result);
+
+        let expect_result = json!({
+            "id": "curltest",
+            "error": "null",
+            "jsonrpc": "1.0",
+            "result": json!({
+                "result": block,
+                "sig": "313990e3c046fb2773e77db569566ea9f89c85ae09de3406c17b81e8fc3c90e2ea7c7d9acec026ebae7c1fd3ba8b4e483fcb43a7eab4faf046e5619b7c050201"
+            })
+        });
+        
+        let expect_result_str = serde_json::to_string(&expect_result).unwrap();
+        assert_eq!(expect_result_str, sgx_result);
+
+        let verify_result = verify_sgx_response(sgx_result, public_key()).unwrap();
+        assert_eq!(verify_result, true);
+
+    }
+
 }

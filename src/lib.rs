@@ -17,7 +17,7 @@ pub use mock::{register_sgx_test, sign_with_device_sgx_key_test, verify_sig_test
 pub use reg::{
     register_sgx_2, sign_with_device_sgx_key, verify_sig, verify_sig_from_string_public,
 };
-pub use resp_verify::{create_sgx_response, ResponseSgx};
+pub use resp_verify::{create_sgx_response, verify_sgx_response, ResponseSgx};
 
 #[derive(Clone)]
 pub enum KeyType {
