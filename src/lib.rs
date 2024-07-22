@@ -1,12 +1,12 @@
 mod mock;
 mod reg;
+mod resp_verify;
 mod sgx_key;
 mod utils;
-mod resp_verify;
 
 use lazy_static::lazy_static;
 use ringvrf::ed25519::{Keypair, Secret};
-use std::{clone, sync::RwLock};
+use std::sync::RwLock;
 
 lazy_static! {
     pub static ref ONLINESK: RwLock<Option<Secret>> = RwLock::new(None);
