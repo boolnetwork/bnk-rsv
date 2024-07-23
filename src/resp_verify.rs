@@ -169,6 +169,60 @@ mod test {
         assert_eq!(verification_result, origin_response.to_string());
     }
 
+    #[test]
+    fn test_parse_v2_string() {
+        reg_mock();
+
+        {
+            let origin_response =
+                "b72a9a7cfbb0685e393f86fa1fa1c43c2888b9ad01c9ac48a28b98e2c8721a89".to_string();
+            let origin_resp_str = serde_json::to_string(&origin_response).unwrap();
+            let sgx_result = create_sgx_response_v2_string(origin_resp_str.clone(), KeyType::SGX);
+            let verification_result =
+                verify_sgx_response_and_restore_origin_response_v2(sgx_result, public_key())
+                    .unwrap();
+            assert_eq!(verification_result, origin_response);
+        }
+
+        // After one to_string is applied, the response will be converted to a String in the
+        // enum serde_json::Value. Subsequently, using serde_json::to_string will directly
+        // take out the internal String. If no to_string is applied, the response will be a enum Object 
+        // in enum serde_json::Value.
+        // and then using serde_json::to_string will convert the Object into a string.
+        // Therefore, the result after one more to_string() is the same.
+        {
+            let origin_response = json!([
+              {
+                "txid": "c56a054302df8f8f80c5ac6b86b24ed52bf41d64de640659837c56bc33d10c9e",
+                "vout": 0,
+                "status": {
+                  "confirmed": true,
+                  "block_height": 174923,
+                  "block_hash": "000000750e335ff355be2e3754fdada30d107d7d916aef07e2f5d014bec845e5",
+                  "block_time": 1703321003
+                },
+                "value": 546
+              },
+            ]);
+
+            let origin_response_one_more_to_string = serde_json::to_string(&origin_response.clone()).unwrap();
+            
+            let sgx_result = create_sgx_response_v2(origin_response_one_more_to_string.clone(), KeyType::SGX);
+
+            let verification_result =
+                verify_sgx_response_and_restore_origin_response_v2(sgx_result, public_key())
+                    .unwrap();
+
+            let sgx_result_2 = create_sgx_response_v2(origin_response.clone(), KeyType::SGX);
+
+            let verification_result_2 =
+                 verify_sgx_response_and_restore_origin_response_v2(sgx_result_2, public_key())
+                    .unwrap();
+
+            assert_eq!(verification_result, verification_result_2);
+        }
+    }
+
     /// GET /signet/api/block/:hash/txid/:index
     /// b72a9a7cfbb0685e393f86fa1fa1c43c2888b9ad01c9ac48a28b98e2c8721a89
     ///
