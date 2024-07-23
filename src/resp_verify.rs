@@ -404,4 +404,51 @@ mod test {
         assert_eq!(new_resp, sgx_result);
         assert!(verify_sgx_response(new_resp, public_key()).unwrap());
     }
+
+    #[test]
+    pub fn asd(){
+        let resp = json!({"jsonrpc":"1.0","result":{"result":
+        {"hash":"3d7c38c5cbda2747d7e4b04f9746843fb06dc9ae3c68a4b5e8649d221b1841fb",
+        "confirmations":1,"height":20,"version":536870912,"versionHex":"20000000",
+        "merkleroot":"b1d026e2cb098df0fc815f8274aab0d159d93000bbe9bf0cb0be1ca9a182cea9",
+        "time":1721726596,"nonce":1,"bits":"207fffff","difficulty":1,"previousblockhash":
+        "3c9f4841ca143edcc038efff14c1c3abec44b1ab80c1ad84bb211b45381e1c2c"},
+        "sig":"c276c48a2e0c788658d3562f3f850583bfcc67f2e30a93c99fceb4a90de7b5b0b790e49e6fd6127a91b4d166832abb0553ff169935aa30130d77aba53f08a306"},"error":"null","id":"curltest"});
+        
+        let pubkey = "888dc98eaa79ac272672a9479c540822fa48336d21ff74307d06f4800352a7c0";
+        //let pk = ringvrf::ed25519::Public::from_bytes(bytes).unwrap();
+
+        let verification_result = verify_sgx_response(resp.to_string(), pubkey.to_string()).unwrap();
+        assert_eq!(verification_result, true);
+    }
+
+    #[tokio::test]
+    pub async fn test_btcd_parse() {
+        use reqwest::{Client, Url};
+        use reqwest::header::AUTHORIZATION;
+
+        let url = Url::parse("https://127.0.0.1:18334/").unwrap();
+        let client = Client::new();
+
+        let req = json!({
+            "jsonrpc": "2.0",
+            "method": "getblockchaininfo",
+            "params": [],
+            "id": 0,
+        });
+        let request = req.to_string();
+        let response = client
+        .get(url)
+        .header("Content-Type", "application/json")
+        .basic_auth("prz", Some("prz"))
+        .header(AUTHORIZATION, " Basic cHJ6OnByeg==")
+        .body(request)
+        .timeout(std::time::Duration::from_secs(5)).send().await.unwrap();
+       
+        println!("response {:?}",response);
+
+        // response.send()
+        // .await.unwrap();
+
+    }
 }
