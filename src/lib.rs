@@ -20,6 +20,7 @@ pub use reg::{
 pub use resp_verify::{
     create_sgx_response, create_sgx_response_v2, verify_sgx_response,
     verify_sgx_response_and_restore_origin_response_v2, SGXResponseV2,
+    create_sgx_response_v2_string,
 };
 
 #[derive(Clone)]

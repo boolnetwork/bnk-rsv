@@ -72,6 +72,22 @@ pub struct SGXResponseV2 {
     pub sig: String,
 }
 
+pub fn create_sgx_response_v2_string(origin_resp: String, keytype: KeyType) -> String {
+    let sign_fn = Box::new(|msg: String, keytype: KeyType| {
+        let sig = match keytype {
+            KeyType::SGX => sign_with_device_sgx_key(msg.as_bytes().to_vec()).unwrap(),
+            KeyType::TEST => sign_with_device_sgx_key_test(msg.as_bytes().to_vec()).unwrap(),
+        };
+        hex::encode(&sig)
+    });
+    let sig = sign_fn(origin_resp.clone(), keytype);
+
+    let resp = Value::from_str(&origin_resp).unwrap();
+    let sgx_resp = SGXResponseV2 { resp, sig };
+
+    serde_json::to_string(&sgx_resp).unwrap()
+}
+
 pub fn create_sgx_response_v2<T: Serialize>(origin_resp: T, keytype: KeyType) -> String {
     let origin_resp_str = serde_json::to_string(&origin_resp).unwrap();
 
