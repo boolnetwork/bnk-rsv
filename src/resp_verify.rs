@@ -1,14 +1,10 @@
+use std::str::FromStr;
+
 use crate::{
     sign_with_device_sgx_key, sign_with_device_sgx_key_test, verify_sig_from_string_public, KeyType,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct ResponseSgx<T: Serialize> {
-    pub result: T,
-    pub sig: String,
-}
 
 pub fn create_sgx_response<T: Serialize>(origin_resp: T, keytype: KeyType) -> String {
     let origin_resp_str = serde_json::to_string(&origin_resp).unwrap();
@@ -70,11 +66,66 @@ fn sgx_result_parse(input: String) -> Result<(String, String), String> {
     Err("sgx_result_parse error: no [result] element".to_string())
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+pub struct SGXResponseV2 {
+    pub resp: Value,
+    pub sig: String,
+}
+
+pub fn create_sgx_response_v2<T: Serialize>(origin_resp: T, keytype: KeyType) -> String {
+    let origin_resp_str = serde_json::to_string(&origin_resp).unwrap();
+
+    let sign_fn = Box::new(|msg: String, keytype: KeyType| {
+        let sig = match keytype {
+            KeyType::SGX => sign_with_device_sgx_key(msg.as_bytes().to_vec()).unwrap(),
+            KeyType::TEST => sign_with_device_sgx_key_test(msg.as_bytes().to_vec()).unwrap(),
+        };
+        hex::encode(&sig)
+    });
+    let sig = sign_fn(origin_resp_str.clone(), keytype);
+
+    let resp = Value::from_str(&origin_resp_str).unwrap();
+    let sgx_resp = SGXResponseV2 { resp, sig };
+
+    serde_json::to_string(&sgx_resp).unwrap()
+}
+
+pub fn verify_sgx_response_and_restore_origin_response_v2(
+    sgx_response: String,
+    public_key: String,
+) -> Result<String, String> {
+    let sgx_resp: SGXResponseV2 = serde_json::from_str(&sgx_response)
+        .map_err(|e| format!("[verify resp v2] deserilize SGXResponseV2 error {e:?}"))?;
+
+    let origin_resp = sgx_resp.resp;
+
+    let msg = origin_resp.to_string();
+    let sig = hex::decode(&sgx_resp.sig)
+        .map_err(|e| format!("[verify resp v2] hex::decode sig error {e:?}"))?;
+
+    if verify_sig_from_string_public(msg.as_bytes().to_vec(), sig, public_key)
+        .map_err(|e| format!("[verify resp v2] error {e:?}"))?
+    {
+        if origin_resp.is_string() {
+            return Ok(origin_resp.as_str().ok_or("err")?.to_owned());
+        } else {
+            let origin_resp_str = serde_json::to_string(&origin_resp)
+                .map_err(|e| format!("[verify resp v2] deserilize origin_resp fail {e:?}"))?;
+            return Ok(origin_resp_str);
+        }
+    }
+
+    Err("sig verify false".to_string())
+}
+
 #[cfg(test)]
 mod test {
     use crate::ONLINESK;
     use crate::*;
-    use resp_verify::{create_sgx_response, verify_sgx_response};
+    use resp_verify::{
+        create_sgx_response, create_sgx_response_v2, verify_sgx_response,
+        verify_sgx_response_and_restore_origin_response_v2,
+    };
     use serde_json::json;
 
     fn reg_mock() {
@@ -84,6 +135,102 @@ mod test {
 
     fn public_key() -> String {
         get_public(KeyType::SGX)
+    }
+
+    ///  eth or btc type json response
+    #[test]
+    fn test_v2_eth() {
+        let block = json!({"blocknum":"888", "hash":"0x1234", "root":"0x5678"});
+        let origin_response = json!({"jsonrpc":"1.0", "result":block, "id":"curltest"});
+
+        reg_mock();
+
+        let sgx_result = create_sgx_response_v2(origin_response.clone(), KeyType::SGX);
+
+        let verification_result =
+            verify_sgx_response_and_restore_origin_response_v2(sgx_result, public_key()).unwrap();
+
+        assert_eq!(verification_result, origin_response.to_string());
+    }
+
+    /// GET /signet/api/block/:hash/txid/:index
+    /// b72a9a7cfbb0685e393f86fa1fa1c43c2888b9ad01c9ac48a28b98e2c8721a89
+    ///
+    /// GET /signet/api/address/:address/utxo
+    /// curl -sSL "https://mempool.space/signet/api/address/tb1pu8ysre22dcl6qy5m5w7mjwutw73w4u24slcdh4myq06uhr6q29dqwc3ckt/utxo"
+    /// https://mempool.space/signet/docs/api/rest#get-address-utxo
+    ///
+    /// GET /signet/api/blocks/tip/height
+    /// 53763
+    /// 
+    /// GET /signet/api/block/:hash
+    #[test]
+    fn test_v2_electrs() {
+        reg_mock();
+
+        {
+            let origin_response =
+                "b72a9a7cfbb0685e393f86fa1fa1c43c2888b9ad01c9ac48a28b98e2c8721a89".to_string();
+            let sgx_result = create_sgx_response_v2(origin_response.clone(), KeyType::SGX);
+            let verification_result =
+                verify_sgx_response_and_restore_origin_response_v2(sgx_result, public_key())
+                    .unwrap();
+            assert_eq!(verification_result, origin_response.to_string());
+        }
+
+        {
+            let origin_response = json!([
+              {
+                "txid": "c56a054302df8f8f80c5ac6b86b24ed52bf41d64de640659837c56bc33d10c9e",
+                "vout": 0,
+                "status": {
+                  "confirmed": true,
+                  "block_height": 174923,
+                  "block_hash": "000000750e335ff355be2e3754fdada30d107d7d916aef07e2f5d014bec845e5",
+                  "block_time": 1703321003
+                },
+                "value": 546
+              },
+            ]);
+            let sgx_result = create_sgx_response_v2(origin_response.clone(), KeyType::SGX);
+            let verification_result =
+                verify_sgx_response_and_restore_origin_response_v2(sgx_result, public_key())
+                    .unwrap();
+            assert_eq!(verification_result, origin_response.to_string());
+        }
+
+        {
+            let origin_response = 53763;
+            let sgx_result = create_sgx_response_v2(origin_response.clone(), KeyType::SGX);
+            let verification_result =
+                verify_sgx_response_and_restore_origin_response_v2(sgx_result, public_key())
+                    .unwrap();
+            assert_eq!(verification_result, origin_response.to_string());
+        }
+
+        {
+            let origin_response = json!({
+                "id": "000000ca66fab8083d4f0370d499c3d602e78af5fa69b2427cda15a3f0d96152",
+                "height": 53745,
+                "version": 536870912,
+                "timestamp": 1630624390,
+                "tx_count": 1,
+                "size": 343,
+                "weight": 1264,
+                "merkle_root": "2c1984132841b9f98270274012b22beb7d4ade778cf058e9a44d38de5a111362",
+                "previousblockhash": "000001497bffdc2347656847647f343afc0eee441a849259335b8a1d79b6aa4a",
+                "mediantime": 1630621400,
+                "nonce": 19642021,
+                "bits": 503404179,
+                "difficulty": 0
+              });
+            let sgx_result = create_sgx_response_v2(origin_response.clone(), KeyType::SGX);
+            let verification_result =
+                verify_sgx_response_and_restore_origin_response_v2(sgx_result, public_key())
+                    .unwrap();
+            assert_eq!(verification_result, origin_response.to_string());
+        }
+
     }
 
     #[test]
@@ -108,8 +255,8 @@ mod test {
         let expect_result_str = serde_json::to_string(&expect_result).unwrap();
         assert_eq!(expect_result_str, sgx_result);
 
-        let verify_result = verify_sgx_response(sgx_result, public_key()).unwrap();
-        assert_eq!(verify_result, true);
+        let verification_result = verify_sgx_response(sgx_result, public_key()).unwrap();
+        assert_eq!(verification_result, true);
     }
 
     #[test]
@@ -136,8 +283,8 @@ mod test {
         let expect_result_str = serde_json::to_string(&expect_result).unwrap();
         assert_eq!(expect_result_str, sgx_result);
 
-        let verify_result = verify_sgx_response(sgx_result, public_key()).unwrap();
-        assert_eq!(verify_result, true);
+        let verification_result = verify_sgx_response(sgx_result, public_key()).unwrap();
+        assert_eq!(verification_result, true);
     }
 
     #[test]
