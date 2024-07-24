@@ -405,18 +405,25 @@ mod test {
         assert!(verify_sgx_response(new_resp, public_key()).unwrap());
     }
 
+    /// curl -k  --user prz:prz --data-binary '{"jsonrpc": "1.0", "id": "curltest", "method": "generate", "params": [10]}'  https://127.0.0.1:18334/
     #[test]
     pub fn asd(){
-        let resp = json!({"jsonrpc":"1.0","result":{"result":
-        {"hash":"3d7c38c5cbda2747d7e4b04f9746843fb06dc9ae3c68a4b5e8649d221b1841fb",
-        "confirmations":1,"height":20,"version":536870912,"versionHex":"20000000",
-        "merkleroot":"b1d026e2cb098df0fc815f8274aab0d159d93000bbe9bf0cb0be1ca9a182cea9",
-        "time":1721726596,"nonce":1,"bits":"207fffff","difficulty":1,"previousblockhash":
-        "3c9f4841ca143edcc038efff14c1c3abec44b1ab80c1ad84bb211b45381e1c2c"},
-        "sig":"c276c48a2e0c788658d3562f3f850583bfcc67f2e30a93c99fceb4a90de7b5b0b790e49e6fd6127a91b4d166832abb0553ff169935aa30130d77aba53f08a306"},"error":"null","id":"curltest"});
-        
-        let pubkey = "888dc98eaa79ac272672a9479c540822fa48336d21ff74307d06f4800352a7c0";
-        //let pk = ringvrf::ed25519::Public::from_bytes(bytes).unwrap();
+        let resp = r#"{"jsonrpc":"1.0","result":{"result":
+        ["221f546c2b26e396d0dbc91abce905bab72f67d5fbb6ac6bc888d81cb9de4735",
+        "5d766b8e2210b498cf146f8b9e278a1ab2813eccb04122d421a41f2f1ebea066",
+        "3cff7e4209cf7a1e80f4d77281b1479a97d06bbe8a6c817ee2d2e874284eab87",
+        "3a4bbf0d8f4cc935ae198baa4975aefa9cd6e9d9a27d0f2f7ca770247460d328",
+        "7f408823c815fb54a93e06222600781f5a3177177d7328e266cc27b26c9eb94c",
+        "48501e534dedda247bb1028dfa8c7439ed5c3098ea511f7f4efa57db31ea979d",
+        "7b2393fc75f1fd26425fd991fe4bd971dfc9db22d5e91872eca8958252c3ee5d",
+        "5560a2422cde2131cbf8f5df6dc34a2152dac90d7da7b9e2f42e65c1241c89ec",
+        "1bef267d5ed1ff813cceef853dc88c2c3e722de7e796f7a45c845a0f8a2f0c75",
+        "497c1eadc5debff21dccc63f79c0c595bc927cfda5b8c4d67ab1e47c821b7ed5"]
+        ,"sig":"f0af8d2adba58fbfc0560f5fe4089754a8ecd683ac8bb4b320f8da86e79c146ba993b4ab61ee2a36f803c6b59dd0f69099c7e112e2bb0c8b48ba4d00cce93105"},
+        "error":null,
+        "id":"curltest"}"#;
+
+        let pubkey = "d3bf5eaec58db3d802e4868a7821af531bc603662248358c5c346aa6fb304090";
 
         let verification_result = verify_sgx_response(resp.to_string(), pubkey.to_string()).unwrap();
         assert_eq!(verification_result, true);
