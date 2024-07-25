@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use crate::{
-    sign_with_device_sgx_key, sign_with_device_sgx_key_test, verify_sig_from_string_public, KeyType,
+    sign_with_device_sgx_key, sign_with_device_sgx_key_test, get_public, verify_sig_from_string_public, KeyType,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -40,7 +40,30 @@ pub fn result_parse(
     serde_json::to_string(&json_data).unwrap()
 }
 
+
+pub fn verify_and_parse_sgx_response(sgx_response: String, public_key: String) -> Result<bool, String> {
+    if sgx_response.starts_with("[") {
+        handle_batch_response(sgx_response.clone(), public_key.clone())
+    } else {
+        verify_sgx_response(sgx_response.clone(), public_key.clone())
+    }
+}
+
+pub fn handle_batch_response(sgx_batch_response: String, public_key: String) -> Result<bool, String> {
+    let mut resp: Value = serde_json::from_str(&sgx_batch_response).unwrap();
+    if let Some(replies_vec) = resp.as_array_mut() {
+        for reply in replies_vec {
+            let res = verify_sgx_response(reply.to_string(), public_key.clone()).unwrap();
+            if !res {
+                return Ok(false);
+            }
+        }
+    }
+    return Ok(true);
+}
+
 pub fn verify_sgx_response(sgx_response: String, public_key: String) -> Result<bool, String> {
+
     let (msg, sig) =
         sgx_result_parse(sgx_response).map_err(|e| format!("verify_sgx_response error {e:?}"))?;
 
@@ -50,7 +73,7 @@ pub fn verify_sgx_response(sgx_response: String, public_key: String) -> Result<b
     verify_sig_from_string_public(msg.as_bytes().to_vec(), sig, public_key)
 }
 
-fn sgx_result_parse(input: String) -> Result<(String, String), String> {
+pub fn sgx_result_parse(input: String) -> Result<(String, String), String> {
     let json_data: Value =
         serde_json::from_str(&input).map_err(|e| format!("sgx_result_parse error {e:?}"))?;
 
@@ -70,20 +93,23 @@ fn sgx_result_parse(input: String) -> Result<(String, String), String> {
 pub struct SGXResponseV2 {
     pub resp: Value,
     pub sig: String,
+    pub pubkey: String,
 }
 
 pub fn create_sgx_response_v2_string(origin_resp: String, keytype: KeyType) -> String {
-    let sign_fn = Box::new(|msg: String, keytype: KeyType| {
+    let sign_fn = Box::new(|msg: String, keytype: &KeyType| {
         let sig = match keytype {
             KeyType::SGX => sign_with_device_sgx_key(msg.as_bytes().to_vec()).unwrap(),
             KeyType::TEST => sign_with_device_sgx_key_test(msg.as_bytes().to_vec()).unwrap(),
         };
         hex::encode(&sig)
     });
-    let sig = sign_fn(origin_resp.clone(), keytype);
+    let sig = sign_fn(origin_resp.clone(), &keytype);
+
+    let pubkey = get_public(keytype);
 
     let resp = Value::from_str(&origin_resp).unwrap();
-    let sgx_resp = SGXResponseV2 { resp, sig };
+    let sgx_resp = SGXResponseV2 { resp, sig, pubkey };
 
     serde_json::to_string(&sgx_resp).unwrap()
 }
@@ -91,17 +117,18 @@ pub fn create_sgx_response_v2_string(origin_resp: String, keytype: KeyType) -> S
 pub fn create_sgx_response_v2<T: Serialize>(origin_resp: T, keytype: KeyType) -> String {
     let origin_resp_str = serde_json::to_string(&origin_resp).unwrap();
 
-    let sign_fn = Box::new(|msg: String, keytype: KeyType| {
+    let sign_fn = Box::new(|msg: String, keytype: &KeyType| {
         let sig = match keytype {
             KeyType::SGX => sign_with_device_sgx_key(msg.as_bytes().to_vec()).unwrap(),
             KeyType::TEST => sign_with_device_sgx_key_test(msg.as_bytes().to_vec()).unwrap(),
         };
         hex::encode(&sig)
     });
-    let sig = sign_fn(origin_resp_str.clone(), keytype);
-
+    let sig = sign_fn(origin_resp_str.clone(), &keytype);
     let resp = Value::from_str(&origin_resp_str).unwrap();
-    let sgx_resp = SGXResponseV2 { resp, sig };
+    let pubkey = get_public(keytype);
+    
+    let sgx_resp = SGXResponseV2 { resp, sig, pubkey };
 
     serde_json::to_string(&sgx_resp).unwrap()
 }
@@ -114,8 +141,9 @@ pub fn verify_sgx_response_and_restore_origin_response_v2(
         .map_err(|e| format!("[verify resp v2] deserilize SGXResponseV2 error {e:?}"))?;
 
     let origin_resp = sgx_resp.resp;
-
+    let public_key = sgx_resp.pubkey;
     let msg = origin_resp.to_string();
+
     let sig = hex::decode(&sgx_resp.sig)
         .map_err(|e| format!("[verify resp v2] hex::decode sig error {e:?}"))?;
 
@@ -130,8 +158,12 @@ pub fn verify_sgx_response_and_restore_origin_response_v2(
             return Ok(origin_resp_str);
         }
     }
-
     Err("sig verify false".to_string())
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct PubkeyResponse {
+    pub pubkey: String,
 }
 
 #[cfg(test)]
@@ -140,7 +172,7 @@ mod test {
     use crate::*;
     use resp_verify::{
         create_sgx_response, create_sgx_response_v2, verify_sgx_response,
-        verify_sgx_response_and_restore_origin_response_v2,
+        verify_sgx_response_and_restore_origin_response_v2, PubkeyResponse, verify_and_parse_sgx_response
     };
     use serde_json::json;
 
@@ -186,7 +218,7 @@ mod test {
 
         // After one to_string is applied, the response will be converted to a String in the
         // enum serde_json::Value. Subsequently, using serde_json::to_string will directly
-        // take out the internal String. If no to_string is applied, the response will be a enum Object 
+        // take out the internal String. If no to_string is applied, the response will be a enum Object
         // in enum serde_json::Value.
         // and then using serde_json::to_string will convert the Object into a string.
         // Therefore, the result after one more to_string() is the same.
@@ -205,9 +237,11 @@ mod test {
               },
             ]);
 
-            let origin_response_one_more_to_string = serde_json::to_string(&origin_response.clone()).unwrap();
-            
-            let sgx_result = create_sgx_response_v2(origin_response_one_more_to_string.clone(), KeyType::SGX);
+            let origin_response_one_more_to_string =
+                serde_json::to_string(&origin_response.clone()).unwrap();
+
+            let sgx_result =
+                create_sgx_response_v2(origin_response_one_more_to_string.clone(), KeyType::SGX);
 
             let verification_result =
                 verify_sgx_response_and_restore_origin_response_v2(sgx_result, public_key())
@@ -216,7 +250,7 @@ mod test {
             let sgx_result_2 = create_sgx_response_v2(origin_response.clone(), KeyType::SGX);
 
             let verification_result_2 =
-                 verify_sgx_response_and_restore_origin_response_v2(sgx_result_2, public_key())
+                verify_sgx_response_and_restore_origin_response_v2(sgx_result_2, public_key())
                     .unwrap();
 
             assert_eq!(verification_result, verification_result_2);
@@ -232,7 +266,7 @@ mod test {
     ///
     /// GET /signet/api/blocks/tip/height
     /// 53763
-    /// 
+    ///
     /// GET /signet/api/block/:hash
     #[test]
     fn test_v2_electrs() {
@@ -280,27 +314,26 @@ mod test {
 
         {
             let origin_response = json!({
-                "id": "000000ca66fab8083d4f0370d499c3d602e78af5fa69b2427cda15a3f0d96152",
-                "height": 53745,
-                "version": 536870912,
-                "timestamp": 1630624390,
-                "tx_count": 1,
-                "size": 343,
-                "weight": 1264,
-                "merkle_root": "2c1984132841b9f98270274012b22beb7d4ade778cf058e9a44d38de5a111362",
-                "previousblockhash": "000001497bffdc2347656847647f343afc0eee441a849259335b8a1d79b6aa4a",
-                "mediantime": 1630621400,
-                "nonce": 19642021,
-                "bits": 503404179,
-                "difficulty": 0
-              });
+              "id": "000000ca66fab8083d4f0370d499c3d602e78af5fa69b2427cda15a3f0d96152",
+              "height": 53745,
+              "version": 536870912,
+              "timestamp": 1630624390,
+              "tx_count": 1,
+              "size": 343,
+              "weight": 1264,
+              "merkle_root": "2c1984132841b9f98270274012b22beb7d4ade778cf058e9a44d38de5a111362",
+              "previousblockhash": "000001497bffdc2347656847647f343afc0eee441a849259335b8a1d79b6aa4a",
+              "mediantime": 1630621400,
+              "nonce": 19642021,
+              "bits": 503404179,
+              "difficulty": 0
+            });
             let sgx_result = create_sgx_response_v2(origin_response.clone(), KeyType::SGX);
             let verification_result =
-                verify_sgx_response_and_restore_origin_response_v2(sgx_result, public_key())
+                verify_sgx_response_and_restore_origin_response_v2(sgx_result, "public_key()".to_string())
                     .unwrap();
             assert_eq!(verification_result, origin_response.to_string());
         }
-
     }
 
     #[test]
@@ -406,56 +439,80 @@ mod test {
     }
 
     /// curl -k  --user prz:prz --data-binary '{"jsonrpc": "1.0", "id": "curltest", "method": "generate", "params": [10]}'  https://127.0.0.1:18334/
-    #[test]
-    pub fn asd(){
-        let resp = r#"{"jsonrpc":"1.0","result":{"result":
-        ["221f546c2b26e396d0dbc91abce905bab72f67d5fbb6ac6bc888d81cb9de4735",
-        "5d766b8e2210b498cf146f8b9e278a1ab2813eccb04122d421a41f2f1ebea066",
-        "3cff7e4209cf7a1e80f4d77281b1479a97d06bbe8a6c817ee2d2e874284eab87",
-        "3a4bbf0d8f4cc935ae198baa4975aefa9cd6e9d9a27d0f2f7ca770247460d328",
-        "7f408823c815fb54a93e06222600781f5a3177177d7328e266cc27b26c9eb94c",
-        "48501e534dedda247bb1028dfa8c7439ed5c3098ea511f7f4efa57db31ea979d",
-        "7b2393fc75f1fd26425fd991fe4bd971dfc9db22d5e91872eca8958252c3ee5d",
-        "5560a2422cde2131cbf8f5df6dc34a2152dac90d7da7b9e2f42e65c1241c89ec",
-        "1bef267d5ed1ff813cceef853dc88c2c3e722de7e796f7a45c845a0f8a2f0c75",
-        "497c1eadc5debff21dccc63f79c0c595bc927cfda5b8c4d67ab1e47c821b7ed5"]
-        ,"sig":"f0af8d2adba58fbfc0560f5fe4089754a8ecd683ac8bb4b320f8da86e79c146ba993b4ab61ee2a36f803c6b59dd0f69099c7e112e2bb0c8b48ba4d00cce93105"},
-        "error":null,
-        "id":"curltest"}"#;
+    async fn send_req(req: String) -> String {
+        use reqwest::{Client, Url};
+        let url = Url::parse("https://127.0.0.1:18334/").unwrap();
+        let client = Client::builder()
+            .danger_accept_invalid_certs(true)
+            .build()
+            .unwrap();
 
-        let pubkey = "d3bf5eaec58db3d802e4868a7821af531bc603662248358c5c346aa6fb304090";
-
-        let verification_result = verify_sgx_response(resp.to_string(), pubkey.to_string()).unwrap();
-        assert_eq!(verification_result, true);
+        let response = client
+            .post(url)
+            .header("Content-Type", "application/json")
+            .basic_auth("prz", Some("prz"))
+            .body(req)
+            .send()
+            .await
+            .expect("failed to get response")
+            .text()
+            .await
+            .expect("failed to get payload");
+        response
     }
 
     #[tokio::test]
     pub async fn test_btcd_parse() {
-        use reqwest::{Client, Url};
-        use reqwest::header::AUTHORIZATION;
+        let req = r#"{"jsonrpc": "2.0", "id": "curltest", "method": "getsgxpubkey", "params": []}"#;
+        let pubkey_resp = send_req(req.to_string()).await;
+        let (pk, _) = sgx_result_parse(pubkey_resp).unwrap();
+        let pk_s: PubkeyResponse = serde_json::from_str(&pk).unwrap();
 
-        let url = Url::parse("https://127.0.0.1:18334/").unwrap();
-        let client = Client::new();
+        let req = r#"{"jsonrpc": "2.0", "id": "curltest", "method": "generate", "params": [10]}"#;
+        let resp = send_req(req.to_string()).await;
+        let verification_result = verify_sgx_response(resp.to_string(), pk_s.pubkey).unwrap();
+        assert_eq!(verification_result, true);
+        let (_data, _) = sgx_result_parse(resp).unwrap();
+    }
 
-        let req = json!({
-            "jsonrpc": "2.0",
-            "method": "getblockchaininfo",
-            "params": [],
-            "id": 0,
-        });
-        let request = req.to_string();
-        let response = client
-        .get(url)
-        .header("Content-Type", "application/json")
-        .basic_auth("prz", Some("prz"))
-        .header(AUTHORIZATION, " Basic cHJ6OnByeg==")
-        .body(request)
-        .timeout(std::time::Duration::from_secs(5)).send().await.unwrap();
-       
-        println!("response {:?}",response);
+    #[tokio::test]
+    pub async fn test_btcd_batch_parse_1() {
+        let req = r#"{"jsonrpc": "2.0", "id": "curltest", "method": "getsgxpubkey", "params": []}"#;
+        let pubkey_resp = send_req(req.to_string()).await;
+        let pk = verify_sgx_response_and_restore_origin_response_v2(pubkey_resp.clone(),
+    "no".to_string()).unwrap();
 
-        // response.send()
-        // .await.unwrap();
+        let req = r#"[{"jsonrpc": "2.0", "id": "curltest", "method": "generate", "params": [1]}
+        ,{"jsonrpc": "2.0", "id": "curltest", "method": "generate", "params": [2]},
+        {"jsonrpc": "2.0", "id": "curltest", "method": "generate", "params": [3]}]"#;
+        let resp = send_req(req.to_string()).await;
+        println!("batch {}",resp);
+        let verification_result = verify_sgx_response_and_restore_origin_response_v2(resp.to_string(),"no".to_string()).unwrap();
 
+    }
+
+    #[tokio::test]
+    pub async fn test_btcd_batch_parse_2() {
+        let resp = r#"{"resp":[{"jsonrpc":"2.0",
+        "result":["4055eeb616218a362240a23d2c905365f033455bfe3ee4d4b4ce80dd914bd3bc"],
+        "error":null,"id":"curltest"},
+        {"jsonrpc":"2.0","result":["619232c87a41f35d0eaec638350d3cb7806b99107752b24ce496f9ca866c01bf","6a3b1eb4e570e1d3186bb59075ff5ba65fa30be9cafd386296a2e8a2977b8148"],"error":null,"id":"curltest"},
+        {"jsonrpc":"2.0","result":["03f733a7ccdca34794f1f8988c0f236656e7c20572562604522b764b772b521b","4b4c1c5d82b002c13235a06a3f35b6141dd44c00ecd9b6e6d9d16de52d49770f","608d28361e9ba960bad5060258c5221b4cf558ffaf76174afe0cd8c6d277246a"],"error":null,"id":"curltest"}],
+        "sig":"55abcbd3e6583765065d351cde133d0f0a27de0384639888e1aaa130920fcd70b77b6531d32bf9813ecc6a90144b0c8edc553acdbfe2552c8f42ed3915a34605","pubkey":"ce31e7216fbcf2ddb2e443d5fe2494d3bcd07abb19763b10906a9f1598492f93"}"#;
+
+        
+        let response = verify_sgx_response_and_restore_origin_response_v2(resp.to_string(),"".to_string()).unwrap();
+        let expect_response = json!([{"error":null,"id":"curltest","jsonrpc":"2.0",
+        "result":["4055eeb616218a362240a23d2c905365f033455bfe3ee4d4b4ce80dd914bd3bc"]},
+        {"error":null,"id":"curltest","jsonrpc":"2.0",
+        "result":["619232c87a41f35d0eaec638350d3cb7806b99107752b24ce496f9ca866c01bf",
+        "6a3b1eb4e570e1d3186bb59075ff5ba65fa30be9cafd386296a2e8a2977b8148"]},
+        {"error":null,"id":"curltest","jsonrpc":"2.0",
+        "result":["03f733a7ccdca34794f1f8988c0f236656e7c20572562604522b764b772b521b",
+        "4b4c1c5d82b002c13235a06a3f35b6141dd44c00ecd9b6e6d9d16de52d49770f",
+        "608d28361e9ba960bad5060258c5221b4cf558ffaf76174afe0cd8c6d277246a"]}]);
+        let expect_result_str = serde_json::to_string(&expect_response).unwrap();
+
+        assert_eq!(response, expect_result_str);
     }
 }

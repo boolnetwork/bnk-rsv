@@ -24,7 +24,7 @@ serde_json = "1"
 #ring = { git = "https://github.com/sgx-test/ring" ,default-features = false, features = ["alloc"] }
 
 [dev-dependencies]
-reqwest = "0.12.5"
+reqwest = { version = "0.12.5", features = ["__rustls", "rustls-tls"] }
 
 [features]
 default = ["occlum-enclave"]

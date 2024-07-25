@@ -18,9 +18,8 @@ pub use reg::{
     register_sgx_2, sign_with_device_sgx_key, verify_sig, verify_sig_from_string_public,
 };
 pub use resp_verify::{
-    create_sgx_response, create_sgx_response_v2, verify_sgx_response,
-    verify_sgx_response_and_restore_origin_response_v2, SGXResponseV2,
-    create_sgx_response_v2_string,
+    create_sgx_response, create_sgx_response_v2, create_sgx_response_v2_string, sgx_result_parse,
+    verify_sgx_response, verify_sgx_response_and_restore_origin_response_v2, SGXResponseV2,
 };
 
 #[derive(Clone)]
