@@ -1,7 +1,8 @@
 use std::str::FromStr;
 
 use crate::{
-    sign_with_device_sgx_key, sign_with_device_sgx_key_test, get_public, verify_sig_from_string_public, KeyType,
+    get_public, sign_with_device_sgx_key, sign_with_device_sgx_key_test,
+    verify_sig_from_string_public, KeyType,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -40,8 +41,10 @@ pub fn result_parse(
     serde_json::to_string(&json_data).unwrap()
 }
 
-
-pub fn verify_and_parse_sgx_response(sgx_response: String, public_key: String) -> Result<bool, String> {
+pub fn verify_and_parse_sgx_response(
+    sgx_response: String,
+    public_key: String,
+) -> Result<bool, String> {
     if sgx_response.starts_with("[") {
         handle_batch_response(sgx_response.clone(), public_key.clone())
     } else {
@@ -49,7 +52,10 @@ pub fn verify_and_parse_sgx_response(sgx_response: String, public_key: String) -
     }
 }
 
-pub fn handle_batch_response(sgx_batch_response: String, public_key: String) -> Result<bool, String> {
+pub fn handle_batch_response(
+    sgx_batch_response: String,
+    public_key: String,
+) -> Result<bool, String> {
     let mut resp: Value = serde_json::from_str(&sgx_batch_response).unwrap();
     if let Some(replies_vec) = resp.as_array_mut() {
         for reply in replies_vec {
@@ -63,7 +69,6 @@ pub fn handle_batch_response(sgx_batch_response: String, public_key: String) -> 
 }
 
 pub fn verify_sgx_response(sgx_response: String, public_key: String) -> Result<bool, String> {
-
     let (msg, sig) =
         sgx_result_parse(sgx_response).map_err(|e| format!("verify_sgx_response error {e:?}"))?;
 
@@ -127,7 +132,7 @@ pub fn create_sgx_response_v2<T: Serialize>(origin_resp: T, keytype: KeyType) ->
     let sig = sign_fn(origin_resp_str.clone(), &keytype);
     let resp = Value::from_str(&origin_resp_str).unwrap();
     let pubkey = get_public(keytype);
-    
+
     let sgx_resp = SGXResponseV2 { resp, sig, pubkey };
 
     serde_json::to_string(&sgx_resp).unwrap()
@@ -171,8 +176,8 @@ mod test {
     use crate::ONLINESK;
     use crate::*;
     use resp_verify::{
-        create_sgx_response, create_sgx_response_v2, verify_sgx_response,
-        verify_sgx_response_and_restore_origin_response_v2, PubkeyResponse, verify_and_parse_sgx_response
+        create_sgx_response, create_sgx_response_v2, verify_and_parse_sgx_response,
+        verify_sgx_response, verify_sgx_response_and_restore_origin_response_v2, PubkeyResponse,
     };
     use serde_json::json;
 
@@ -329,9 +334,11 @@ mod test {
               "difficulty": 0
             });
             let sgx_result = create_sgx_response_v2(origin_response.clone(), KeyType::SGX);
-            let verification_result =
-                verify_sgx_response_and_restore_origin_response_v2(sgx_result, "public_key()".to_string())
-                    .unwrap();
+            let verification_result = verify_sgx_response_and_restore_origin_response_v2(
+                sgx_result,
+                "public_key()".to_string(),
+            )
+            .unwrap();
             assert_eq!(verification_result, origin_response.to_string());
         }
     }
@@ -479,29 +486,34 @@ mod test {
     pub async fn test_btcd_batch_parse_1() {
         let req = r#"{"jsonrpc": "2.0", "id": "curltest", "method": "getsgxpubkey", "params": []}"#;
         let pubkey_resp = send_req(req.to_string()).await;
-        let pk = verify_sgx_response_and_restore_origin_response_v2(pubkey_resp.clone(),
-    "no".to_string()).unwrap();
+        let pk = verify_sgx_response_and_restore_origin_response_v2(
+            pubkey_resp.clone(),
+            "no".to_string(),
+        )
+        .unwrap();
 
         let req = r#"[{"jsonrpc": "2.0", "id": "curltest", "method": "generate", "params": [1]}
         ,{"jsonrpc": "2.0", "id": "curltest", "method": "generate", "params": [2]},
         {"jsonrpc": "2.0", "id": "curltest", "method": "generate", "params": [3]}]"#;
         let resp = send_req(req.to_string()).await;
-        println!("batch {}",resp);
-        let verification_result = verify_sgx_response_and_restore_origin_response_v2(resp.to_string(),"no".to_string()).unwrap();
-
+        println!("batch {}", resp);
+        let verification_result =
+            verify_sgx_response_and_restore_origin_response_v2(resp.to_string(), "no".to_string())
+                .unwrap();
     }
 
     #[tokio::test]
     pub async fn test_btcd_batch_parse_2() {
-        let resp = r#"{"resp":[{"jsonrpc":"2.0",
-        "result":["4055eeb616218a362240a23d2c905365f033455bfe3ee4d4b4ce80dd914bd3bc"],
-        "error":null,"id":"curltest"},
+        let resp = r#"{"resp":
+        [{"jsonrpc":"2.0","result":["4055eeb616218a362240a23d2c905365f033455bfe3ee4d4b4ce80dd914bd3bc"],"error":null,"id":"curltest"},
         {"jsonrpc":"2.0","result":["619232c87a41f35d0eaec638350d3cb7806b99107752b24ce496f9ca866c01bf","6a3b1eb4e570e1d3186bb59075ff5ba65fa30be9cafd386296a2e8a2977b8148"],"error":null,"id":"curltest"},
         {"jsonrpc":"2.0","result":["03f733a7ccdca34794f1f8988c0f236656e7c20572562604522b764b772b521b","4b4c1c5d82b002c13235a06a3f35b6141dd44c00ecd9b6e6d9d16de52d49770f","608d28361e9ba960bad5060258c5221b4cf558ffaf76174afe0cd8c6d277246a"],"error":null,"id":"curltest"}],
-        "sig":"55abcbd3e6583765065d351cde133d0f0a27de0384639888e1aaa130920fcd70b77b6531d32bf9813ecc6a90144b0c8edc553acdbfe2552c8f42ed3915a34605","pubkey":"ce31e7216fbcf2ddb2e443d5fe2494d3bcd07abb19763b10906a9f1598492f93"}"#;
+        "sig":"55abcbd3e6583765065d351cde133d0f0a27de0384639888e1aaa130920fcd70b77b6531d32bf9813ecc6a90144b0c8edc553acdbfe2552c8f42ed3915a34605",
+        "pubkey":"ce31e7216fbcf2ddb2e443d5fe2494d3bcd07abb19763b10906a9f1598492f93"}"#;
 
-        
-        let response = verify_sgx_response_and_restore_origin_response_v2(resp.to_string(),"".to_string()).unwrap();
+        let response =
+            verify_sgx_response_and_restore_origin_response_v2(resp.to_string(), "".to_string())
+                .unwrap();
         let expect_response = json!([{"error":null,"id":"curltest","jsonrpc":"2.0",
         "result":["4055eeb616218a362240a23d2c905365f033455bfe3ee4d4b4ce80dd914bd3bc"]},
         {"error":null,"id":"curltest","jsonrpc":"2.0",
