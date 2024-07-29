@@ -140,7 +140,7 @@ pub fn create_sgx_response_v2<T: Serialize>(origin_resp: T, keytype: KeyType) ->
 
 pub fn verify_sgx_response_and_restore_origin_response_v2(
     sgx_response: String,
-    public_key: String,
+    _public_key: String,
 ) -> Result<String, String> {
     let sgx_resp: SGXResponseV2 = serde_json::from_str(&sgx_response)
         .map_err(|e| format!("[verify resp v2] deserilize SGXResponseV2 error {e:?}"))?;
