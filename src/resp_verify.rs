@@ -41,33 +41,6 @@ pub fn result_parse(
     serde_json::to_string(&json_data).unwrap()
 }
 
-pub fn verify_and_parse_sgx_response(
-    sgx_response: String,
-    public_key: String,
-) -> Result<bool, String> {
-    if sgx_response.starts_with("[") {
-        handle_batch_response(sgx_response.clone(), public_key.clone())
-    } else {
-        verify_sgx_response(sgx_response.clone(), public_key.clone())
-    }
-}
-
-pub fn handle_batch_response(
-    sgx_batch_response: String,
-    public_key: String,
-) -> Result<bool, String> {
-    let mut resp: Value = serde_json::from_str(&sgx_batch_response).unwrap();
-    if let Some(replies_vec) = resp.as_array_mut() {
-        for reply in replies_vec {
-            let res = verify_sgx_response(reply.to_string(), public_key.clone()).unwrap();
-            if !res {
-                return Ok(false);
-            }
-        }
-    }
-    return Ok(true);
-}
-
 pub fn verify_sgx_response(sgx_response: String, public_key: String) -> Result<bool, String> {
     let (msg, sig) =
         sgx_result_parse(sgx_response).map_err(|e| format!("verify_sgx_response error {e:?}"))?;
@@ -176,7 +149,7 @@ mod test {
     use crate::ONLINESK;
     use crate::*;
     use resp_verify::{
-        create_sgx_response, create_sgx_response_v2, verify_and_parse_sgx_response,
+        create_sgx_response, create_sgx_response_v2,
         verify_sgx_response, verify_sgx_response_and_restore_origin_response_v2, PubkeyResponse,
     };
     use serde_json::json;
