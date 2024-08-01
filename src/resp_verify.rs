@@ -459,7 +459,7 @@ mod test {
     pub async fn test_btcd_batch_parse_1() {
         let req = r#"{"jsonrpc": "2.0", "id": "curltest", "method": "getsgxpubkey", "params": []}"#;
         let pubkey_resp = send_req(req.to_string()).await;
-        let pk = verify_sgx_response_and_restore_origin_response_v2(
+        let _pk = verify_sgx_response_and_restore_origin_response_v2(
             pubkey_resp.clone(),
             "no".to_string(),
         )
@@ -470,7 +470,7 @@ mod test {
         {"jsonrpc": "2.0", "id": "curltest", "method": "generate", "params": [3]}]"#;
         let resp = send_req(req.to_string()).await;
         println!("batch {}", resp);
-        let verification_result =
+        let _verification_result =
             verify_sgx_response_and_restore_origin_response_v2(resp.to_string(), "no".to_string())
                 .unwrap();
     }

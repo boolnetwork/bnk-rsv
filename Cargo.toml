@@ -11,8 +11,8 @@ sha3 = "0.8.2"
 log = { version = "0.4.18", default-features = false }
 
 pallets-api = { path = "./extern/pallets-api" }
-ringvrf =  { path = "./carbon/extern/rvrf" }
-occlum-ra =  { path = "./carbon/extern/occlum-ra/occlum-ra" }
+ringvrf =  { path = "./extern/rvrf" }
+occlum-ra =  { path = "./extern/occlum-ra/occlum-ra" }
 
 tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
 tracing = "0.1.37"
