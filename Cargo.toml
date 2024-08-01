@@ -10,7 +10,7 @@ lazy_static = "1.5.0"
 sha3 = "0.8.2"
 log = { version = "0.4.18", default-features = false }
 
-pallets-api = { path = "./carbon/node/pallets-api" }
+pallets-api = { path = "./extern/pallets-api" }
 ringvrf =  { path = "./carbon/extern/rvrf" }
 occlum-ra =  { path = "./carbon/extern/occlum-ra/occlum-ra" }
 
