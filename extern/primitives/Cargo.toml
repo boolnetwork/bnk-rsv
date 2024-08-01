@@ -1,0 +1,51 @@
+[package]
+name = "node-primitives"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+sp-application-crypto = { git = "https://github.com/boolnetwork/polkadot-sdk", branch = "Bool_Polkadot", default-features = false}
+sp-core = { git = "https://github.com/boolnetwork/polkadot-sdk", branch = "Bool_Polkadot", default-features = false }
+sp-std = { git = "https://github.com/boolnetwork/polkadot-sdk", branch = "Bool_Polkadot", default-features = false }
+sp-runtime = { git = "https://github.com/boolnetwork/polkadot-sdk", branch = "Bool_Polkadot", default-features = false }
+sp-io = { git = "https://github.com/boolnetwork/polkadot-sdk", branch = "Bool_Polkadot", default-features = false }
+libsecp256k1 = { version = "0.3.2", default-features = false }
+serde = { version = "1.0.195", default-features = false, features = ["alloc", "derive"] }
+codec = { package = "parity-scale-codec", version = "3.2.2", default-features = false }
+scale-info = { version = "2.0", default-features = false }
+log = { version = "0.4.14", default-features = false }
+#impl-serde = { version = "0.3.0", default-features = false }
+sha3 = { version = "0.9", default-features = false }
+sha2 = { version = "0.9", default-features = false }
+hex = { version = "0.4", default-features = false }
+bls-signatures = "0.6.0"
+bnk-types = { path = "../types" }
+fp-account = { git = "https://github.com/boolnetwork/frontier.git", branch = "update-evm-engine",  default-features = false }
+
+[features]
+default = ["std"]
+std = [
+    "sp-application-crypto/std",
+    "sp-core/std",
+    "sp-std/std",
+    "sp-runtime/std",
+    "sp-io/std",
+    "serde/std",
+    "codec/std",
+#    "impl-serde/std",
+    "fp-account/std",
+#    "fp-account/std",
+#    "pallet-evm/std",
+]
+
+serde = [
+#    "impl-serde",
+    "scale-info/serde",
+    "sp-core/serde",
+    "sp-runtime/serde",
+]

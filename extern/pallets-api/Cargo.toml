@@ -1,0 +1,21 @@
+[package]
+name = "pallets-api"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+log = { version = "0.4.14", default-features = false }
+anyhow = "1.0"
+sp-core = { git = "https://github.com/boolnetwork/polkadot-sdk", branch = "Bool_Polkadot", default-features = false }
+sp-runtime = { git = "https://github.com/boolnetwork/polkadot-sdk", branch = "Bool_Polkadot", default-features = false }
+sp-keyring = { git = "https://github.com/boolnetwork/polkadot-sdk", branch = "Bool_Polkadot" }
+codec = { package = "parity-scale-codec", version = "3.2.2", default-features = false }
+jsonrpsee-types = "0.2.0"
+tokio = { version = "1.27.0" }
+url = { version = "^2.2", features = ["serde"] }
+hex = { version = "0.4", default-features = false }
+serde_json = { version = "1.0", default-features = false }
+scale-info = { version = "2.0", default-features = false }
+subxt = { git = "https://github.com/ABMatrix/subxt.git", branch = "Bool_Polkadot" }
+node-primitives = { path = "../primitives", default-features = true }
+

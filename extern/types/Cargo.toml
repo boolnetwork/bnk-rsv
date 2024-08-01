@@ -1,0 +1,24 @@
+[package]
+name = "bnk-types"
+version = "0.3.1"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+serde = { version = "1.0.195", default-features = false, features = ["alloc", "derive"] }
+serde_json = "1.0"
+hex = { version = "0.4", default-features = false }
+toml = "0.5.9"
+log = "0.4"
+anyhow = "^1.0"
+async-trait = "0.1.51"
+parking_lot = "0.10.2"
+lru = "0.7.5"
+sqlx = { version = "0.5", features = ["runtime-async-std-rustls", "macros", "sqlite"], optional = true }
+
+[dev-dependencies]
+hex = { version = "0.4", default-features = false }
+
+[features]
+sqlite = ["sqlx"]
