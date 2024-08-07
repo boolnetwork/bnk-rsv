@@ -41,9 +41,12 @@ pub async fn call_register_rpc(
     did: (u16, Vec<u8>),
     report: Vec<u8>,
     signature: Vec<u8>,
+    deviceid: &str,
 ) -> Result<String, String> {
     let (version, _pk) = did;
     let owner = hex::decode(no_prefix(config_owner)).map_err(|e| e.to_string())?;
+    let deviceid = hex::decode(no_prefix(deviceid)).map_err(|e| e.to_string())?;
+
     let mut owner_bytes = [0u8; 20];
     owner_bytes.copy_from_slice(&owner);
     match pallets_api::register_device_rpc(
@@ -52,6 +55,7 @@ pub async fn call_register_rpc(
         report,
         version,
         signature,
+        deviceid,
     )
     .await
     {

@@ -307,7 +307,7 @@ fn mangle_scalar_bits(bits: &mut [u8; 32]) -> Scalar {
 //====================================================================//
 
 pub const SIGNATURE_LENGTH: usize = 64;
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct Secret(pub Scalar);
 
 impl Secret {

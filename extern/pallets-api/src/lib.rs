@@ -38,7 +38,7 @@ use node_primitives::CustomError;
 
 /// use subxt cli to update metadata 'subxt metadata --url http://127.0.0.1:9933 --version 14 -f bytes > metadata.scale'
 #[subxt::subxt(
-    runtime_metadata_path = "./metadata.scale",
+    runtime_metadata_path = "./metadata.scale.reg",
     derive_for_all_types = "Eq, PartialEq, Clone, Debug",
 )]
 pub mod bool {}

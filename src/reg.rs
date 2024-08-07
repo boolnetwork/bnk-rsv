@@ -12,6 +12,7 @@ pub async fn register_sgx_2(
     subclient_warn_time: u128,
     config_version: u16,
     device_owner: String,
+    watcher_device_id: String,
 ) -> Result<u16, String> {
     let subclient =
         SubClient::new_from_ecdsa_sk(subclient_url.to_string(), None, Some(subclient_warn_time))
@@ -97,6 +98,7 @@ pub async fn register_sgx_2(
                 did,
                 report.clone(),
                 signature.clone(),
+                &watcher_device_id,
             )
             .await
             {

@@ -8,10 +8,11 @@ pub async fn register_device_rpc(
     report: Vec<u8>,
     version: u16,
     signature: Vec<u8>,
+    deviceid: Vec<u8>,
 ) -> Result<Hash, String> {
     let call = crate::bool::tx()
         .rpc()
-        .register_device(owner, report, version, signature);
+        .register_device(owner, report, version, signature, deviceid);
     client
         .submit_extrinsic_without_signer(call)
         .await

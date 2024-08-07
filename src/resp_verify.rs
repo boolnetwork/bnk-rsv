@@ -149,8 +149,8 @@ mod test {
     use crate::ONLINESK;
     use crate::*;
     use resp_verify::{
-        create_sgx_response, create_sgx_response_v2,
-        verify_sgx_response, verify_sgx_response_and_restore_origin_response_v2, PubkeyResponse,
+        create_sgx_response, create_sgx_response_v2, verify_sgx_response,
+        verify_sgx_response_and_restore_origin_response_v2, PubkeyResponse,
     };
     use serde_json::json;
 

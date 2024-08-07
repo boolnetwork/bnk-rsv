@@ -35,3 +35,21 @@ pub async fn get_did(config_version: u16) -> (u16, Vec<u8>) {
     let online_pk: ringvrf::ed25519::Public = online_sk.into();
     (config_version, online_pk.as_bytes())
 }
+
+#[test]
+fn test_secret_addition() {
+    let bytes = vec![2u8; 32];
+    let s1 = Secret::from_bytes(&bytes).unwrap();
+
+    let device_type_bytes = vec![
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 1,
+    ];
+    let s2 = Secret::from_bytes(&device_type_bytes).unwrap();
+
+    let s3_s = s1.0 + s2.0;
+
+    let s3: Secret = Secret::from_bytes(s3_s.as_bytes()).unwrap();
+
+    println!("s3 {:?}", s3);
+}

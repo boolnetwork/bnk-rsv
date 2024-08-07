@@ -22,3 +22,23 @@ pub async fn device_info_rpc(
         }
     }
 }
+
+pub async fn relate_deviceid_rpc(
+    sub_client: &BoolSubClient,
+    id: Vec<u8>,
+    at_block: Option<Hash>,) 
+    -> Option<Vec<Vec<u8>>> {
+    let storage_query = crate::bool::storage().rpc().watcher_deviceid_map_rpc_deviceid(id.clone());
+    match sub_client.query_storage(storage_query, at_block).await {
+        Ok(res) => {
+            if res.is_none() {
+                log::warn!(target: "pallets_api", "query none device info for id: {:?}", id);
+            }
+            res
+            }
+            Err(e) => {
+                log::error!(target: "pallets_api", "query device failed: id: {:?} for {:?}", id, e);
+                return None;
+            }
+    }
+}
