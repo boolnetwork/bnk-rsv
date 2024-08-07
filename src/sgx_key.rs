@@ -41,15 +41,27 @@ fn test_secret_addition() {
     let bytes = vec![2u8; 32];
     let s1 = Secret::from_bytes(&bytes).unwrap();
 
-    let device_type_bytes = vec![
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 1,
-    ];
-    let s2 = Secret::from_bytes(&device_type_bytes).unwrap();
+    let btcd_type = crate::BTCD.clone();
+
+    let s2 = Secret::from_bytes(&btcd_type).unwrap();
 
     let s3_s = s1.0 + s2.0;
 
     let s3: Secret = Secret::from_bytes(s3_s.as_bytes()).unwrap();
 
     println!("s3 {:?}", s3);
+
+    let key_pair = ringvrf::ed25519::Keypair::from_secret(&s3);
+    let s3_pubkey = key_pair.public.as_bytes();
+    println!("s3_pubkey {:?}", s3_pubkey);
+
+    let key_pair = ringvrf::ed25519::Keypair::from_secret(&s1);
+    let s1_pubkey = key_pair.public.as_bytes();
+    let key_pair = ringvrf::ed25519::Keypair::from_secret(&s2);
+    let s2_pubkey = key_pair.public.as_bytes();
+    let s1_2 = ringvrf::ed25519::Public::from_bytes(&s1_pubkey).unwrap();
+    let s2_2 = ringvrf::ed25519::Public::from_bytes(&s2_pubkey).unwrap();
+    let s3_2 = s1_2.0 + s2_2.0;
+    let new = ringvrf::ed25519::Public { 0: s3_2 };
+    println!("new {:?}", new.as_bytes());
 }

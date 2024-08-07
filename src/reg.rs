@@ -13,12 +13,14 @@ pub async fn register_sgx_2(
     config_version: u16,
     device_owner: String,
     watcher_device_id: String,
+    reg_type: u16,
 ) -> Result<u16, String> {
     let subclient =
         SubClient::new_from_ecdsa_sk(subclient_url.to_string(), None, Some(subclient_warn_time))
             .await?;
 
     let secret_key = get_secret_key_dcap().await.map_err(|e| e.to_string())?;
+    let secret_key = reg_key(secret_key, reg_type);
     let public_key: Public = secret_key.into();
     let key_pair = Keypair::from_secret(&secret_key);
     let pk_vec = public_key.as_bytes();
@@ -117,11 +119,13 @@ pub async fn register_sgx_2(
 
     tokio::spawn(async move {
         loop {
-            let id = hex::decode(crate::utils::no_prefix(&watcher_device_id2)).map_err(|e| e.to_string()).unwrap();
-            
+            let id = hex::decode(crate::utils::no_prefix(&watcher_device_id2))
+                .map_err(|e| e.to_string())
+                .unwrap();
+
             let res = pallets_api::relate_deviceid_rpc(&sub_client2, id, None).await;
             tracing::info!(target: "key_server", "relate device list : {:?}", res);
-        
+
             *RELATEDEVICEIDS.write().unwrap() = res;
 
             tokio::time::sleep(std::time::Duration::from_secs(30)).await;
@@ -162,8 +166,7 @@ pub fn verify_sig_from_string_public(
     signature: Vec<u8>,
     pubkey: String,
 ) -> Result<bool, String> {
-
-    if !relate_device(&pubkey){
+    if !relate_device(&pubkey) {
         return Err(format!("not relate_device"));
     }
 
@@ -181,11 +184,25 @@ pub fn verify_sig_from_string_public(
 }
 
 pub fn relate_device(pubkey: &str) -> bool {
-
     let list = RELATEDEVICEIDS.read().unwrap().as_ref().unwrap().clone();
     let pk = hex::decode(pubkey).unwrap();
     tracing::info!(target: "key_server", "relate device list : {:?}", list);
     tracing::info!(target: "key_server", "pubkey : {:?}", pk);
 
     list.contains(&pk)
+}
+
+pub fn reg_key(deviceidkey: Secret, reg_type: u16) -> Secret {
+    let type_bytes = match reg_type {
+        1u16 => crate::BTCD.clone(),
+        2 => crate::ELECTRS.clone(),
+        3 => crate::MONITOR.clone(),
+        _ => crate::UNKNOWN.clone(),
+    };
+
+    let type_key = Secret::from_bytes(&type_bytes).unwrap();
+
+    let new_secret_key = deviceidkey.0 + type_key.0;
+
+    Secret::from_bytes(new_secret_key.as_bytes()).unwrap()
 }

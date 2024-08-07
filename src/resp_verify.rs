@@ -152,10 +152,22 @@ mod test {
         create_sgx_response, create_sgx_response_v2, verify_sgx_response,
         verify_sgx_response_and_restore_origin_response_v2, PubkeyResponse,
     };
+    use ringvrf::ed25519::Public;
     use serde_json::json;
 
-    fn reg_mock() {
+    fn reg_mock_2() {
         let secret_key = Secret::from_bytes(&[8u8; 32]).unwrap();
+
+        *ONLINESK.write().unwrap() = Some(secret_key);
+
+        let key_pair = Keypair::from_secret(&secret_key);
+        let pubkey = key_pair.public.as_bytes();
+        *RELATEDEVICEIDS.write().unwrap() = Some(vec![pubkey]);
+    }
+
+    fn reg_mock() {
+        let secret_key = crate::reg::reg_key(Secret::random(), 4u16);
+
         *ONLINESK.write().unwrap() = Some(secret_key);
 
         let key_pair = Keypair::from_secret(&secret_key);
@@ -325,7 +337,7 @@ mod test {
         let block = json!({"blocknum":"888", "hash":"0x1234", "root":"0x5678"});
         let origin_response = json!({"jsonrpc":"1.0", "result":block, "id":"curltest"});
 
-        reg_mock();
+        reg_mock_2();
 
         let sgx_result = create_sgx_response(origin_response, KeyType::SGX);
         println!("sgx_result {:?}", sgx_result);
@@ -352,7 +364,7 @@ mod test {
         let origin_response =
             json!({"jsonrpc":"1.0", "result":block, "error": "null" ,"id":"curltest"});
 
-        reg_mock();
+        reg_mock_2();
 
         let sgx_result = create_sgx_response(origin_response, KeyType::SGX);
         println!("sgx_result {:?}", sgx_result);
@@ -481,6 +493,11 @@ mod test {
 
     #[tokio::test]
     pub async fn test_btcd_batch_parse_2() {
+        let pk = "ce31e7216fbcf2ddb2e443d5fe2494d3bcd07abb19763b10906a9f1598492f93";
+        *RELATEDEVICEIDS.write().unwrap() =
+            Some(vec![Public::from_bytes(&hex::decode(pk).unwrap())
+                .unwrap()
+                .as_bytes()]);
         let resp = r#"{"resp":
         [{"jsonrpc":"2.0","result":["4055eeb616218a362240a23d2c905365f033455bfe3ee4d4b4ce80dd914bd3bc"],"error":null,"id":"curltest"},
         {"jsonrpc":"2.0","result":["619232c87a41f35d0eaec638350d3cb7806b99107752b24ce496f9ca866c01bf","6a3b1eb4e570e1d3186bb59075ff5ba65fa30be9cafd386296a2e8a2977b8148"],"error":null,"id":"curltest"},

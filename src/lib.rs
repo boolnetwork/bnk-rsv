@@ -12,7 +12,22 @@ lazy_static! {
     pub static ref ONLINESK: RwLock<Option<Secret>> = RwLock::new(None);
     pub static ref TESTSK: RwLock<Option<Secret>> = RwLock::new(None);
     pub static ref RELATEDEVICEIDS: RwLock<Option<Vec<Vec<u8>>>> = RwLock::new(None);
-
+    pub static ref BTCD: Vec<u8> = vec![
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 1
+    ];
+    pub static ref ELECTRS: Vec<u8> = vec![
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 2
+    ];
+    pub static ref MONITOR: Vec<u8> = vec![
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 3
+    ];
+    pub static ref UNKNOWN: Vec<u8> = vec![
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 4
+    ];
 }
 
 pub use mock::{register_sgx_test, sign_with_device_sgx_key_test, verify_sig_test};
