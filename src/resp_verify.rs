@@ -157,6 +157,10 @@ mod test {
     fn reg_mock() {
         let secret_key = Secret::from_bytes(&[8u8; 32]).unwrap();
         *ONLINESK.write().unwrap() = Some(secret_key);
+
+        let key_pair = Keypair::from_secret(&secret_key);
+        let pubkey = key_pair.public.as_bytes();
+        *RELATEDEVICEIDS.write().unwrap() = Some(vec![pubkey]);
     }
 
     fn public_key() -> String {

@@ -5,7 +5,7 @@ use ringvrf::ed25519::{Keypair, Public, Secret, Signature};
 
 use crate::sgx_key::{get_did, get_secret_key_dcap};
 use crate::utils::sha3_hash256;
-use crate::ONLINESK;
+use crate::{ONLINESK, RELATEDEVICEIDS};
 
 pub async fn register_sgx_2(
     subclient_url: String,
@@ -89,12 +89,14 @@ pub async fn register_sgx_2(
             "register device failed due to invalid enclave_hash: {:?enclave_hash}".to_string(),
         );
     }
+    let sub_client2 = sub_client.clone();
+    let watcher_device_id2 = watcher_device_id.clone();
     tokio::spawn(async move {
         loop {
             let mut did = get_did(config_version).await;
             did.0 = current_version;
             match crate::utils::call_register_rpc(
-                &sub_client,
+                &sub_client.clone(),
                 &config_owner,
                 did,
                 report.clone(),
@@ -112,6 +114,20 @@ pub async fn register_sgx_2(
             tokio::time::sleep(std::time::Duration::from_secs(30)).await;
         }
     });
+
+    tokio::spawn(async move {
+        loop {
+            let id = hex::decode(crate::utils::no_prefix(&watcher_device_id2)).map_err(|e| e.to_string()).unwrap();
+            
+            let res = pallets_api::relate_deviceid_rpc(&sub_client2, id, None).await;
+            tracing::info!(target: "key_server", "relate device list : {:?}", res);
+        
+            *RELATEDEVICEIDS.write().unwrap() = res;
+
+            tokio::time::sleep(std::time::Duration::from_secs(30)).await;
+        }
+    });
+
     Ok(current_version)
 }
 
@@ -146,6 +162,11 @@ pub fn verify_sig_from_string_public(
     signature: Vec<u8>,
     pubkey: String,
 ) -> Result<bool, String> {
+
+    if !relate_device(&pubkey){
+        return Err(format!("not relate_device"));
+    }
+
     let msg = sha3_hash256(&msg);
 
     let keypair = Keypair {
@@ -157,4 +178,14 @@ pub fn verify_sig_from_string_public(
         Ok(()) => return Ok(true),
         Err(e) => return Err(format!("verify error {e:?}")),
     }
+}
+
+pub fn relate_device(pubkey: &str) -> bool {
+
+    let list = RELATEDEVICEIDS.read().unwrap().as_ref().unwrap().clone();
+    let pk = hex::decode(pubkey).unwrap();
+    tracing::info!(target: "key_server", "relate device list : {:?}", list);
+    tracing::info!(target: "key_server", "pubkey : {:?}", pk);
+
+    list.contains(&pk)
 }
