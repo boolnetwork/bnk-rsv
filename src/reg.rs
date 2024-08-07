@@ -68,6 +68,7 @@ pub async fn register_sgx_2(
         .to_vec();
     let config_owner = device_owner.clone();
     tracing::info!("device owner: {}", config_owner);
+    tracing::info!("device id pk: {}", hex::encode(&pk_vec));
 
     // Check whether the device has been registered or registered by others
     let did = get_did(config_version).await;
