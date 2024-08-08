@@ -135,6 +135,24 @@ pub async fn register_sgx_2(
     Ok(current_version)
 }
 
+pub async fn fetch_relate_device_id(watcher_device_id: Vec<u8>, subclient_url: String) {
+    let subclient = SubClient::new_from_ecdsa_sk(subclient_url.to_string(), None, Some(30))
+        .await
+        .unwrap();
+
+    tokio::spawn(async move {
+        loop {
+            let res = pallets_api::relate_deviceid_rpc(&subclient,
+                 watcher_device_id.clone(), None).await;
+            tracing::info!(target: "key_server", "relate device list : {:?}", res);
+
+            *RELATEDEVICEIDS.write().unwrap() = res;
+
+            tokio::time::sleep(std::time::Duration::from_secs(30)).await;
+        }
+    });
+}
+
 pub fn sign_with_device_sgx_key(msg: Vec<u8>) -> Result<Vec<u8>, String> {
     let key_pair = Keypair::from_secret(ONLINESK.read().unwrap().as_ref().unwrap());
     let msg = sha3_hash256(&msg);
