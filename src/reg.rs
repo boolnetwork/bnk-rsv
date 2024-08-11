@@ -79,8 +79,23 @@ pub async fn register_sgx_2(
         pk: did.1,
     };
     let device = pallets_api::device_info_rpc(&sub_client, device_id.pk.clone(), None).await;
-    // need register: owner != sender && owner's lock is zero && device's state == standby
-    if let Some(_) = device {
+    if let Some(d) = device {
+        println!("registered");
+        let sub_client2 = sub_client.clone();
+        let id = d.watcher_deviceid.clone();
+        tokio::spawn(async move {
+            loop {
+                println!("=======relate_deviceid_rpc==spawn======");
+                let res = pallets_api::relate_deviceid_rpc(&sub_client2, id.clone(), None).await;
+                *RELATEDEVICEIDS.write().unwrap() = res.clone();
+                for device in res.unwrap_or(vec![vec![0]]){
+                    println!("relate device list : {}", hex::encode(&device));
+                }
+    
+                tokio::time::sleep(std::time::Duration::from_secs(30)).await;
+            }
+        });
+
         return Err("registered".to_string());
     }
     // try to register device
