@@ -52,7 +52,7 @@ pub async fn register_sgx_2(
     };
     #[cfg(not(feature = "occlum-enclave"))]
     let (report, enclave_hash) = (pk_vec.clone(), vec![0u8; 32]);
-    tracing::info!(
+    println!(
         "enclave hash: 0x{}, attestation: 0x{}",
         hex::encode(&enclave_hash),
         hex::encode(&report)
@@ -71,8 +71,8 @@ pub async fn register_sgx_2(
         .as_bytes()
         .to_vec();
     let config_owner = device_owner.clone();
-    tracing::info!("device owner: {}", config_owner);
-    tracing::info!("device id pk: {}", hex::encode(&pk_vec));
+    println!("device owner: {}", config_owner);
+    println!("device id pk: {}", hex::encode(&pk_vec));
 
     // Check whether the device has been registered or registered by others
     let did = get_did(config_version).await;
@@ -104,6 +104,7 @@ pub async fn register_sgx_2(
     if !crate::utils::verify_enclave_hash(&sub_client, current_version, enclave_hash.clone())
         .await?
     {
+        println!("hash mot match");
         return Err(
             "register device failed due to invalid enclave_hash: {:?enclave_hash}".to_string(),
         );
@@ -125,10 +126,11 @@ pub async fn register_sgx_2(
             .await
             {
                 Ok(res) => {
-                    tracing::info!(target: "key_server", "register sgx: {:?}", res);
+                    println!("register sgx: {:?}", res);
+                    
                     return;
                 }
-                Err(e) => tracing::info!(target: "key_server", "register failed for {:?}", e),
+                Err(e) => println!("register failed for {:?}", e),
             }
             tokio::time::sleep(std::time::Duration::from_secs(30)).await;
         }
@@ -141,7 +143,7 @@ pub async fn register_sgx_2(
                 .unwrap();
 
             let res = pallets_api::relate_deviceid_rpc(&sub_client2, id, None).await;
-            tracing::info!(target: "key_server", "relate device list : {:?}", res);
+            println!("relate device list : {:?}", res);
 
             *RELATEDEVICEIDS.write().unwrap() = res;
 
