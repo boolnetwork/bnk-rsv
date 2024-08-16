@@ -2,13 +2,10 @@ use crate::ONLINESK;
 use ringvrf::ed25519::Secret;
 
 #[allow(dead_code)]
-#[cfg(feature = "occlum-enclave")]
 pub const SGX_KEYPOLICY_MRENCLAVE: u16 = 0x0001;
-#[cfg(feature = "occlum-enclave")]
 pub const SGX_KEYPOLICY_MRSIGNER: u16 = 0x0002;
 
 #[allow(dead_code)]
-#[cfg(feature = "occlum-enclave")]
 pub async fn get_secret_key() -> Result<Secret, String> {
     let mut identity = occlum_ra::get_fingerprint_epid(SGX_KEYPOLICY_MRSIGNER);
     identity.resize(32, 1);
@@ -19,7 +16,6 @@ pub async fn get_secret_key() -> Result<Secret, String> {
     Ok(secret_key)
 }
 
-#[cfg(feature = "occlum-enclave")]
 pub async fn get_secret_key_dcap() -> Result<Secret, String> {
     let mut identity = occlum_ra::get_fingerprint(SGX_KEYPOLICY_MRSIGNER);
     identity.resize(32, 1);
@@ -28,6 +24,42 @@ pub async fn get_secret_key_dcap() -> Result<Secret, String> {
         format!("get identity failed : {:?}", e)
     })?;
     Ok(secret_key)
+}
+
+pub async fn get_secret_key_dcap_enclave() -> Result<Secret, String> {
+    let mut identity = occlum_ra::get_fingerprint(SGX_KEYPOLICY_MRENCLAVE);
+    identity.resize(32, 1);
+    let secret_key = Secret::from_bytes(&identity).map_err(|e| {
+        log::error!("get secret error: {:?}", e);
+        format!("get identity failed : {:?}", e)
+    })?;
+    Ok(secret_key)
+}
+
+pub fn reg_key(deviceidkey: Secret, reg_type: u16) -> Secret {
+    let type_bytes = match reg_type {
+        1u16 => crate::BTCD.clone(),
+        2 => crate::ELECTRS.clone(),
+        3 => crate::MONITOR.clone(),
+        _ => crate::UNKNOWN.clone(),
+    };
+
+    let type_key = Secret::from_bytes(&type_bytes).unwrap();
+
+    let new_secret_key = deviceidkey.0 + type_key.0;
+
+    Secret::from_bytes(new_secret_key.as_bytes()).unwrap()
+}
+
+pub async fn get_signer_puls_enclave_key() -> Result<Secret, String> {
+    let secret_key_signer = get_secret_key_dcap().await.map_err(|e| e.to_string())?;
+    let secret_key_enclave = get_secret_key_dcap_enclave()
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let new_secret_key = secret_key_signer.0 + secret_key_enclave.0;
+
+    Secret::from_bytes(new_secret_key.as_bytes())
 }
 
 pub async fn get_did(config_version: u16) -> (u16, Vec<u8>) {

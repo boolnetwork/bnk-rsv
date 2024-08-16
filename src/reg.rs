@@ -3,7 +3,7 @@ use pallets_api::version_list;
 use pallets_api::{self, bool::runtime_types::pallet_facility::pallet::DIdentity};
 use ringvrf::ed25519::{Keypair, Public, Secret, Signature};
 
-use crate::sgx_key::{get_did, get_secret_key_dcap};
+use crate::sgx_key::{get_did, get_signer_puls_enclave_key, reg_key};
 use crate::utils::sha3_hash256;
 use crate::{ONLINESK, RELATEDEVICEIDS};
 
@@ -19,7 +19,9 @@ pub async fn register_sgx_2(
         SubClient::new_from_ecdsa_sk(subclient_url.to_string(), None, Some(subclient_warn_time))
             .await?;
 
-    let secret_key = get_secret_key_dcap().await.map_err(|e| e.to_string())?;
+    let secret_key = get_signer_puls_enclave_key()
+        .await
+        .map_err(|e| e.to_string())?;
     let secret_key = reg_key(secret_key, reg_type);
     let public_key: Public = secret_key.into();
     let key_pair = Keypair::from_secret(&secret_key);
@@ -88,10 +90,10 @@ pub async fn register_sgx_2(
                 println!("=======relate_deviceid_rpc==spawn======");
                 let res = pallets_api::relate_deviceid_rpc(&sub_client2, id.clone(), None).await;
                 *RELATEDEVICEIDS.write().unwrap() = res.clone();
-                for device in res.unwrap_or(vec![vec![0]]){
+                for device in res.unwrap_or(vec![vec![0]]) {
                     println!("relate device list : {}", hex::encode(&device));
                 }
-    
+
                 tokio::time::sleep(std::time::Duration::from_secs(30)).await;
             }
         });
@@ -157,8 +159,8 @@ pub async fn fetch_relate_device_id(watcher_device_id: Vec<u8>, subclient_url: S
 
     tokio::spawn(async move {
         loop {
-            let res = pallets_api::relate_deviceid_rpc(&subclient,
-                 watcher_device_id.clone(), None).await;
+            let res =
+                pallets_api::relate_deviceid_rpc(&subclient, watcher_device_id.clone(), None).await;
             tracing::info!(target: "key_server", "relate device list : {:?}", res);
 
             *RELATEDEVICEIDS.write().unwrap() = res;
@@ -223,19 +225,4 @@ pub fn relate_device(pubkey: &str) -> bool {
     tracing::info!(target: "key_server", "pubkey : {:?}", pk);
 
     list.contains(&pk)
-}
-
-pub fn reg_key(deviceidkey: Secret, reg_type: u16) -> Secret {
-    let type_bytes = match reg_type {
-        1u16 => crate::BTCD.clone(),
-        2 => crate::ELECTRS.clone(),
-        3 => crate::MONITOR.clone(),
-        _ => crate::UNKNOWN.clone(),
-    };
-
-    let type_key = Secret::from_bytes(&type_bytes).unwrap();
-
-    let new_secret_key = deviceidkey.0 + type_key.0;
-
-    Secret::from_bytes(new_secret_key.as_bytes()).unwrap()
 }

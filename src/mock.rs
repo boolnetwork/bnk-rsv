@@ -2,7 +2,7 @@ use crate::{utils::sha3_hash256, RELATEDEVICEIDS, TESTSK};
 use ringvrf::ed25519::{Keypair, Secret, Signature};
 
 pub async fn register_sgx_test() {
-    let secret_key = crate::reg::reg_key(Secret::random(), 4u16);
+    let secret_key = crate::sgx_key::reg_key(Secret::random(), 4u16);
 
     *TESTSK.write().unwrap() = Some(secret_key);
 

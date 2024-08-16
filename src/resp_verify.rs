@@ -166,7 +166,7 @@ mod test {
     }
 
     fn reg_mock() {
-        let secret_key = crate::reg::reg_key(Secret::random(), 4u16);
+        let secret_key = crate::sgx_key::reg_key(Secret::random(), 4u16);
 
         *ONLINESK.write().unwrap() = Some(secret_key);
 
