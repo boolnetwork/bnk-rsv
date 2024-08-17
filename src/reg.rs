@@ -87,14 +87,14 @@ pub async fn register_sgx_2(
         let id = d.watcher_deviceid.clone();
         tokio::spawn(async move {
             loop {
-                println!("=======relate_deviceid_rpc==spawn======");
+                println!("=======relate_deviceid_rpc======");
                 let res = pallets_api::relate_deviceid_rpc(&sub_client2, id.clone(), None).await;
                 *RELATEDEVICEIDS.write().unwrap() = res.clone();
                 for device in res.unwrap_or(vec![vec![0]]) {
                     println!("relate device list : {}", hex::encode(&device));
                 }
 
-                tokio::time::sleep(std::time::Duration::from_secs(30)).await;
+                tokio::time::sleep(std::time::Duration::from_secs(60)).await;
             }
         });
 
@@ -132,22 +132,24 @@ pub async fn register_sgx_2(
                 }
                 Err(e) => println!("register failed for {:?}", e),
             }
-            tokio::time::sleep(std::time::Duration::from_secs(30)).await;
+            tokio::time::sleep(std::time::Duration::from_secs(60)).await;
         }
     });
 
     tokio::spawn(async move {
         loop {
+            println!("===registered====relate_deviceid_rpc======");
             let id = hex::decode(crate::utils::no_prefix(&watcher_device_id2))
                 .map_err(|e| e.to_string())
                 .unwrap();
 
             let res = pallets_api::relate_deviceid_rpc(&sub_client2, id, None).await;
-            println!("relate device list : {:?}", res);
+            *RELATEDEVICEIDS.write().unwrap() = res.clone();
+            for device in res.unwrap_or(vec![vec![0]]) {
+                println!("relate device list : {}", hex::encode(&device));
+            }
 
-            *RELATEDEVICEIDS.write().unwrap() = res;
-
-            tokio::time::sleep(std::time::Duration::from_secs(30)).await;
+            tokio::time::sleep(std::time::Duration::from_secs(60)).await;
         }
     });
 
@@ -209,9 +211,11 @@ pub fn verify_sig_from_string_public(
 
     let msg = sha3_hash256(&msg);
 
+    let pk = hex::decode(pubkey).map_err(|e| format!("hex decode error {e:?}"))?;
+    let public = Public::from_bytes(&pk).map_err(|e| format!("not pubkey error {e:?}"))?;
     let keypair = Keypair {
         secret: Secret::random(), // TODO:: fix it
-        public: Public::from_bytes(&hex::decode(pubkey).unwrap()).unwrap(),
+        public,
     };
 
     match keypair.verify(&msg, &Signature::from_bytes(&signature).unwrap()) {
@@ -221,10 +225,12 @@ pub fn verify_sig_from_string_public(
 }
 
 pub fn relate_device(pubkey: &str) -> bool {
-    let list = RELATEDEVICEIDS.read().unwrap().as_ref().unwrap().clone();
-    let pk = hex::decode(pubkey).unwrap();
-    tracing::info!(target: "key_server", "relate device list : {:?}", list);
-    tracing::info!(target: "key_server", "pubkey : {:?}", pk);
-
-    list.contains(&pk)
+    let list = RELATEDEVICEIDS.read().unwrap().clone();
+    if list.is_none() {
+        return false;
+    }
+    let pk = hex::decode(pubkey).unwrap_or_else(|_| {
+        Vec::new()
+    });
+    list.unwrap().contains(&pk)
 }
