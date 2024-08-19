@@ -20,6 +20,8 @@ tracing = "0.1.37"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
+aes = "0.6"
+
 #[patch.crates-io]
 #ring = { git = "https://github.com/sgx-test/ring" ,default-features = false, features = ["alloc"] }
 
