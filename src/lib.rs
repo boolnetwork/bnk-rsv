@@ -40,7 +40,7 @@ pub use resp_verify::{
     create_sgx_response, create_sgx_response_v2, create_sgx_response_v2_string, sgx_result_parse,
     verify_sgx_response, verify_sgx_response_and_restore_origin_response_v2, SGXResponseV2,
 };
-pub use seal::{sealing, unsealing};
+pub use seal::{sealing, unsealing, sealing_test, unsealing_test};
 
 #[derive(Clone)]
 pub enum KeyType {
