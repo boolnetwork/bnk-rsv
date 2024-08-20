@@ -3,7 +3,7 @@ use aes::cipher::NewBlockCipher;
 use aes::{Aes256, BlockCipher};
 use std::vec::Vec;
 
-use crate::{ONLINESK, TESTSK};
+use crate::ONLINESK;
 
 pub const BLOCK_LEN: usize = 16;
 
@@ -74,24 +74,6 @@ pub fn unsealing(value: Vec<u8>) -> Result<Vec<u8>, String> {
     let sk = match ONLINESK.read().unwrap().clone() {
         Some(sk) => sk.as_bytes(),
         None => return Err(String::from("unseal key ONLINESK not found")),
-    };
-
-    Ok(decrypt(sk, value))
-}
-
-pub fn sealing_test(value: Vec<u8>) -> Result<Vec<u8>, String> {
-    let sk = match TESTSK.read().unwrap().clone() {
-        Some(sk) => sk.as_bytes(),
-        None => return Err(String::from("seal key TESTSK not found")),
-    };
-
-    Ok(encrypt(sk, value))
-}
-
-pub fn unsealing_test(value: Vec<u8>) -> Result<Vec<u8>, String> {
-    let sk = match TESTSK.read().unwrap().clone() {
-        Some(sk) => sk.as_bytes(),
-        None => return Err(String::from("unseal key TESTSK not found")),
     };
 
     Ok(decrypt(sk, value))

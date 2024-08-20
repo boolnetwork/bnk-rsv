@@ -40,7 +40,7 @@ pub use resp_verify::{
     create_sgx_response, create_sgx_response_v2, create_sgx_response_v2_string, sgx_result_parse,
     verify_sgx_response, verify_sgx_response_and_restore_origin_response_v2, SGXResponseV2,
 };
-pub use seal::{sealing, unsealing, sealing_test, unsealing_test};
+pub use seal::{sealing, unsealing};
 
 #[derive(Clone)]
 pub enum KeyType {
@@ -48,17 +48,8 @@ pub enum KeyType {
     TEST,
 }
 
-pub fn get_public(key_type: KeyType) -> String {
-    match key_type {
-        KeyType::SGX => {
-            let key_pair = Keypair::from_secret(ONLINESK.read().unwrap().as_ref().unwrap());
-            let pubkey = key_pair.public.as_bytes();
-            hex::encode(pubkey)
-        }
-        KeyType::TEST => {
-            let key_pair = Keypair::from_secret(TESTSK.read().unwrap().as_ref().unwrap());
-            let pubkey = key_pair.public.as_bytes();
-            hex::encode(pubkey)
-        }
-    }
+pub fn get_public(_key_type: KeyType) -> String {
+    let key_pair = Keypair::from_secret(ONLINESK.read().unwrap().as_ref().unwrap());
+    let pubkey = key_pair.public.as_bytes();
+    hex::encode(pubkey)
 }

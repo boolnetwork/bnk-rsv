@@ -1,10 +1,10 @@
-use crate::{utils::sha3_hash256, RELATEDEVICEIDS, TESTSK};
+use crate::{utils::sha3_hash256, ONLINESK, RELATEDEVICEIDS};
 use ringvrf::ed25519::{Keypair, Secret, Signature};
 
 pub async fn register_sgx_test() {
     let secret_key = crate::sgx_key::reg_key(Secret::random(), 4u16);
 
-    *TESTSK.write().unwrap() = Some(secret_key);
+    *ONLINESK.write().unwrap() = Some(secret_key);
 
     let key_pair = Keypair::from_secret(&secret_key);
     let pubkey = key_pair.public.as_bytes();
@@ -12,7 +12,7 @@ pub async fn register_sgx_test() {
 }
 
 pub fn sign_with_device_sgx_key_test(msg: Vec<u8>) -> Result<Vec<u8>, String> {
-    let key_pair = Keypair::from_secret(TESTSK.read().unwrap().as_ref().unwrap());
+    let key_pair = Keypair::from_secret(ONLINESK.read().unwrap().as_ref().unwrap());
     let msg = sha3_hash256(&msg);
     let sig = key_pair
         .sign(&msg)
@@ -24,7 +24,7 @@ pub fn sign_with_device_sgx_key_test(msg: Vec<u8>) -> Result<Vec<u8>, String> {
 }
 
 pub fn verify_sig_test(msg: Vec<u8>, signature: Vec<u8>) -> Result<bool, String> {
-    let key_pair = Keypair::from_secret(TESTSK.read().unwrap().as_ref().unwrap());
+    let key_pair = Keypair::from_secret(ONLINESK.read().unwrap().as_ref().unwrap());
     let msg = sha3_hash256(&msg);
 
     match key_pair.verify(&msg, &Signature::from_bytes(&signature).unwrap()) {
