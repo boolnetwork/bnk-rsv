@@ -34,7 +34,7 @@ lazy_static! {
 pub use mock::{register_sgx_test, sign_with_device_sgx_key_test, verify_sig_test};
 pub use reg::{
     fetch_relate_device_id, register_sgx_2, sign_with_device_sgx_key, verify_sig,
-    verify_sig_from_string_public,
+    verify_sig_from_string_public, register_sgx_2_not_fetch
 };
 pub use resp_verify::{
     create_sgx_response, create_sgx_response_v2, create_sgx_response_v2_string, sgx_result_parse,
