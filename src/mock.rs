@@ -1,8 +1,13 @@
 use crate::{utils::sha3_hash256, ONLINESK, RELATEDEVICEIDS};
 use ringvrf::ed25519::{Keypair, Secret, Signature};
 
-pub async fn register_sgx_test() {
-    let secret_key = crate::sgx_key::reg_key(Secret::random(), 4u16);
+pub async fn register_sgx_test(random: bool) {
+    let secret_key = if random {
+        crate::sgx_key::reg_key(Secret::random(), 4u16)
+    }else{
+        crate::sgx_key::reg_key(Secret::from_bytes(&[8;32]).unwrap(), 4u16)
+    };
+    
 
     *ONLINESK.write().unwrap() = Some(secret_key);
 
