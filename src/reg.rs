@@ -290,6 +290,19 @@ pub async fn fetch_relate_device_id(watcher_device_id: Vec<u8>, subclient_url: S
     });
 }
 
+pub async fn update_relate_device_id_once(watcher_device_id: Vec<u8>, subclient_url: String) {
+    let subclient = SubClient::new_from_ecdsa_sk(subclient_url.to_string(), None, Some(30))
+        .await
+        .unwrap();
+
+    let res =
+        pallets_api::relate_deviceid_rpc(&subclient, watcher_device_id.clone(), None).await;
+        tracing::info!(target: "key_server", "relate device list : {:?}", res);
+
+    *RELATEDEVICEIDS.write().unwrap() = res;
+
+}
+
 pub fn sign_with_device_sgx_key(msg: Vec<u8>) -> Result<Vec<u8>, String> {
     let key_pair = Keypair::from_secret(ONLINESK.read().unwrap().as_ref().unwrap());
     let msg = sha3_hash256(&msg);
