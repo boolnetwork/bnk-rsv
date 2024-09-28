@@ -303,6 +303,22 @@ pub async fn update_relate_device_id_once(watcher_device_id: Vec<u8>, subclient_
 
 }
 
+pub async fn update_relate_device_id_once_string(watcher_device_id: String, subclient_url: String) {
+    let id = hex::decode(crate::utils::no_prefix(&watcher_device_id))
+    .map_err(|e| e.to_string())
+    .unwrap();
+
+    let subclient = SubClient::new_from_ecdsa_sk(subclient_url.to_string(), None, Some(30))
+        .await
+        .unwrap();
+
+    let res =
+        pallets_api::relate_deviceid_rpc(&subclient, id.clone(), None).await;
+        tracing::info!(target: "key_server", "relate device list : {:?}", res);
+
+    *RELATEDEVICEIDS.write().unwrap() = res;
+}
+
 pub fn sign_with_device_sgx_key(msg: Vec<u8>) -> Result<Vec<u8>, String> {
     let key_pair = Keypair::from_secret(ONLINESK.read().unwrap().as_ref().unwrap());
     let msg = sha3_hash256(&msg);
