@@ -42,6 +42,7 @@ pub use resp_verify::{
     verify_sgx_response, verify_sgx_response_and_restore_origin_response_v2, SGXResponseV2,
 };
 pub use seal::{sealing, unsealing};
+pub use pallets_api::eth_checkpoint;
 
 #[derive(Clone)]
 pub enum KeyType {

@@ -42,3 +42,22 @@ pub async fn relate_deviceid_rpc(
             }
     }
 }
+
+pub async fn eth_checkpoint(
+    sub_client: &BoolSubClient,
+    at_block: Option<Hash>,) 
+    -> Option<Vec<u8>> {
+    let storage_query = crate::bool::storage().rpc().eth_checkpoint();
+    match sub_client.query_storage(storage_query, at_block).await {
+        Ok(res) => {
+            if res.is_none() {
+                log::warn!(target: "pallets_api", "query none device info for");
+            }
+            res
+            }
+            Err(e) => {
+                log::error!(target: "pallets_api", "query device failed: {:?}", e);
+                return None;
+            }
+    }
+}
