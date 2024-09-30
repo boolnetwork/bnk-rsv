@@ -319,6 +319,15 @@ pub async fn update_relate_device_id_once_string(watcher_device_id: String, subc
     *RELATEDEVICEIDS.write().unwrap() = res;
 }
 
+pub async fn fetch_eth_checkpoint(subclient_url: String) -> Option<Vec<u8>>{
+
+    let subclient = SubClient::new_from_ecdsa_sk(subclient_url.to_string(), None, Some(30))
+    .await
+    .unwrap();
+
+    pallets_api::eth_checkpoint(&subclient, None).await
+}
+
 pub fn sign_with_device_sgx_key(msg: Vec<u8>) -> Result<Vec<u8>, String> {
     let key_pair = Keypair::from_secret(ONLINESK.read().unwrap().as_ref().unwrap());
     let msg = sha3_hash256(&msg);
