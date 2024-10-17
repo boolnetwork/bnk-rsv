@@ -1,5 +1,5 @@
 use crate::{utils::sha3_hash256, ONLINESK, RELATEDEVICEIDS};
-use ringvrf::ed25519::{Keypair, Secret, Signature};
+use crate::ed25519::{Keypair, Secret, Signature};
 
 pub async fn register_sgx_test(random: bool) {
     let secret_key = if random {
@@ -42,7 +42,7 @@ pub fn verify_sig_test(msg: Vec<u8>, signature: Vec<u8>) -> Result<bool, String>
 fn test_sign_verify() {
     use crate::ONLINESK;
     use crate::*;
-    use ringvrf::ed25519::Public;
+    use crate::ed25519::Public;
 
     let secret_key = Secret::from_bytes(&[8u8; 32]).unwrap();
     *ONLINESK.write().unwrap() = Some(secret_key);

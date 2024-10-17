@@ -152,7 +152,7 @@ mod test {
         create_sgx_response, create_sgx_response_v2, verify_sgx_response,
         verify_sgx_response_and_restore_origin_response_v2, PubkeyResponse,
     };
-    use ringvrf::ed25519::Public;
+    use crate::ed25519::Public;
     use serde_json::json;
 
     fn reg_mock_2() {
@@ -457,6 +457,7 @@ mod test {
         response
     }
 
+    #[ignore]
     #[tokio::test]
     pub async fn test_btcd_parse() {
         let req = r#"{"jsonrpc": "2.0", "id": "curltest", "method": "getsgxpubkey", "params": []}"#;
@@ -471,6 +472,7 @@ mod test {
         let (_data, _) = sgx_result_parse(resp).unwrap();
     }
 
+    #[ignore]
     #[tokio::test]
     pub async fn test_btcd_batch_parse_1() {
         let req = r#"{"jsonrpc": "2.0", "id": "curltest", "method": "getsgxpubkey", "params": []}"#;

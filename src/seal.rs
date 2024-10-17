@@ -81,7 +81,7 @@ pub fn unsealing(value: Vec<u8>) -> Result<Vec<u8>, String> {
 
 #[test]
 fn test_seal() {
-    use ringvrf::ed25519::Secret;
+    use crate::ed25519::Secret;
 
     let secret_key = crate::sgx_key::reg_key(Secret::random(), 4u16);
     *ONLINESK.write().unwrap() = Some(secret_key);

@@ -1,7 +1,7 @@
 use pallets_api::client::SubClient;
 use pallets_api::version_list;
 use pallets_api::{self, bool::runtime_types::pallet_facility::pallet::DIdentity};
-use ringvrf::ed25519::{Keypair, Public, Secret, Signature};
+use crate::ed25519::{Keypair, Public, Secret, Signature};
 
 use crate::sgx_key::{get_did, get_signer_puls_enclave_key, reg_key};
 use crate::utils::sha3_hash256;

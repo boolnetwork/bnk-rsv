@@ -11,7 +11,7 @@ sha3 = "0.8.2"
 log = { version = "0.4.18", default-features = false }
 
 pallets-api = { path = "./extern/pallets-api" }
-ringvrf =  { path = "./extern/rvrf" }
+#ringvrf =  { path = "./extern/rvrf" }
 occlum-ra =  { path = "./extern/occlum-ra/occlum-ra" }
 
 tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
@@ -21,6 +21,11 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
 aes = "0.6"
+
+curve25519-dalek = "=4.1.0"
+sha2 = { version = "0.8", default-features = false }
+rand = { version = "0.8", default-features = false, features = ["getrandom"] }
+rand_core = { version = "0.5.1", default-features = false, features = ["getrandom"] }
 
 #[patch.crates-io]
 #ring = { git = "https://github.com/sgx-test/ring" ,default-features = false, features = ["alloc"] }

@@ -4,9 +4,10 @@ mod resp_verify;
 mod seal;
 mod sgx_key;
 mod utils;
+mod ed25519;
 
 use lazy_static::lazy_static;
-use ringvrf::ed25519::{Keypair, Secret};
+use ed25519::{Keypair, Secret};
 use std::sync::RwLock;
 
 lazy_static! {

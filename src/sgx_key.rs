@@ -1,5 +1,5 @@
 use crate::ONLINESK;
-use ringvrf::ed25519::Secret;
+use crate::ed25519::Secret;
 
 #[allow(dead_code)]
 pub const SGX_KEYPOLICY_MRENCLAVE: u16 = 0x0001;
@@ -64,7 +64,7 @@ pub async fn get_signer_puls_enclave_key() -> Result<Secret, String> {
 
 pub async fn get_did(config_version: u16) -> (u16, Vec<u8>) {
     let online_sk = ONLINESK.read().unwrap().as_ref().unwrap().clone();
-    let online_pk: ringvrf::ed25519::Public = online_sk.into();
+    let online_pk: crate::ed25519::Public = online_sk.into();
     (config_version, online_pk.as_bytes())
 }
 
@@ -83,17 +83,17 @@ fn test_secret_addition() {
 
     println!("s3 {:?}", s3);
 
-    let key_pair = ringvrf::ed25519::Keypair::from_secret(&s3);
+    let key_pair = crate::ed25519::Keypair::from_secret(&s3);
     let s3_pubkey = key_pair.public.as_bytes();
     println!("s3_pubkey {:?}", s3_pubkey);
 
-    let key_pair = ringvrf::ed25519::Keypair::from_secret(&s1);
+    let key_pair = crate::ed25519::Keypair::from_secret(&s1);
     let s1_pubkey = key_pair.public.as_bytes();
-    let key_pair = ringvrf::ed25519::Keypair::from_secret(&s2);
+    let key_pair = crate::ed25519::Keypair::from_secret(&s2);
     let s2_pubkey = key_pair.public.as_bytes();
-    let s1_2 = ringvrf::ed25519::Public::from_bytes(&s1_pubkey).unwrap();
-    let s2_2 = ringvrf::ed25519::Public::from_bytes(&s2_pubkey).unwrap();
+    let s1_2 = crate::ed25519::Public::from_bytes(&s1_pubkey).unwrap();
+    let s2_2 = crate::ed25519::Public::from_bytes(&s2_pubkey).unwrap();
     let s3_2 = s1_2.0 + s2_2.0;
-    let new = ringvrf::ed25519::Public { 0: s3_2 };
+    let new = crate::ed25519::Public { 0: s3_2 };
     println!("new {:?}", new.as_bytes());
 }
