@@ -1,8 +1,0 @@
-[workspace]
-members = [
-    "occlum-ra",
-]
-
-exclude = [
-    "rust_app"
-]
