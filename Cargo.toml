@@ -26,6 +26,7 @@ curve25519-dalek = "4.1.0"
 sha2 = { version = "0.8", default-features = false }
 rand = { version = "0.8", default-features = false, features = ["getrandom"] }
 rand_core = { version = "0.5.1", default-features = false, features = ["getrandom"] }
+subtle = "^2.6.1"
 
 #[patch.crates-io]
 #ring = { git = "https://github.com/sgx-test/ring" ,default-features = false, features = ["alloc"] }
