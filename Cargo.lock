@@ -716,6 +716,35 @@ dependencies = [
 ]
 
 [[package]]
+name = "bnk-occlum-ra"
+version = "0.1.0"
+source = "git+https://github.com/boolnetwork/bnk-occlum-ra#3fcf05bc1e90de5d49946635b479f45ea550d1f9"
+dependencies = [
+ "base64 0.9.3",
+ "bit-vec",
+ "chrono",
+ "hex",
+ "http_req",
+ "httparse",
+ "itertools 0.8.2",
+ "log",
+ "num-bigint 0.4.6",
+ "occlum_dcap",
+ "pem",
+ "rand 0.8.5",
+ "rand_core 0.5.1",
+ "ring 0.16.20",
+ "rustls 0.19.1",
+ "serde",
+ "serde_json",
+ "sgx_types",
+ "sha2 0.8.2",
+ "webpki",
+ "webpki-roots 0.21.1",
+ "yasna",
+]
+
+[[package]]
 name = "bnk-types"
 version = "0.3.2"
 dependencies = [
@@ -2580,37 +2609,9 @@ dependencies = [
 ]
 
 [[package]]
-name = "occlum-ra"
-version = "0.1.1"
-dependencies = [
- "base64 0.9.3",
- "bit-vec",
- "chrono",
- "hex",
- "http_req",
- "httparse",
- "itertools 0.8.2",
- "log",
- "num-bigint 0.4.6",
- "occlum_dcap",
- "pem",
- "rand 0.8.5",
- "rand_core 0.5.1",
- "ring 0.16.20",
- "rustls 0.19.1",
- "serde",
- "serde_json",
- "sgx_types",
- "sha2 0.8.2",
- "webpki",
- "webpki-roots 0.21.1",
- "yasna",
-]
-
-[[package]]
 name = "occlum_dcap"
 version = "0.1.0"
-source = "git+https://github.com/ABMatrix/occlum#e422a787be0d591bbe1bf85a6dcfd5c7414862f8"
+source = "git+https://github.com/boolnetwork/occlum#e422a787be0d591bbe1bf85a6dcfd5c7414862f8"
 dependencies = [
  "cfg-if 1.0.0",
  "libc",
@@ -3806,11 +3807,11 @@ name = "sgx-bool-registration-tool"
 version = "0.1.0"
 dependencies = [
  "aes",
+ "bnk-occlum-ra",
  "curve25519-dalek 4.1.0",
  "hex",
  "lazy_static",
  "log",
- "occlum-ra",
  "pallets-api",
  "rand 0.8.5",
  "rand_core 0.5.1",
