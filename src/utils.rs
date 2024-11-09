@@ -15,7 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use pallets_api::hash_to_version;
+use pallets_api::query::facility::hash_to_version;
 use pallets_api::BoolSubClient;
 use sha3::{Digest, Sha3_256};
 
@@ -42,6 +42,7 @@ pub async fn verify_enclave_hash(
     }
     let online_enclave_list = hash_to_version(sub_client, version, None)
         .await
+        .map_err(|e| e.to_string())?
         .ok_or("hash_to_version failed".to_string())?;
 
     let online_enclave_hashs: Vec<Vec<u8>> = online_enclave_list
@@ -66,9 +67,9 @@ pub async fn call_register_rpc(
 
     let mut owner_bytes = [0u8; 20];
     owner_bytes.copy_from_slice(&owner);
-    match pallets_api::register_device_rpc(
+    match pallets_api::submit::rpc::register_device_rpc(
         sub_client,
-        pallets_api::bool::runtime_types::node_primitives::AccountId20(owner_bytes),
+        pallets_api::bool::runtime_types::fp_account::AccountId20(owner_bytes),
         report,
         version,
         signature,
