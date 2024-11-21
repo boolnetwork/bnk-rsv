@@ -307,17 +307,17 @@ pub async fn fetch_relate_device_id(watcher_device_id: Vec<u8>, subclient_url: S
     });
 }
 
-pub async fn update_relate_device_id_once(watcher_device_id: Vec<u8>, subclient_url: String) {
+pub async fn update_relate_device_id_once(watcher_device_id: Vec<u8>, subclient_url: String) -> Result<(), String> {
     let subclient = SubClient::new_from_ecdsa_sk(subclient_url.to_string(), None, Some(30))
         .await
-        .unwrap();
+        .map_err(|e| format!("subclient::new_from_ecdsa_sk failed {e:?}"))?;
 
     let res =
         pallets_api::relate_deviceid_rpc(&subclient, watcher_device_id.clone(), None).await;
-        tracing::info!(target: "key_server", "relate device list : {:?}", res);
+    tracing::info!(target: "key_server", "relate device list : {:?}", res);
 
     *RELATEDEVICEIDS.write().unwrap() = res;
-
+    Ok(())
 }
 
 pub async fn update_relate_device_id_once_string(watcher_device_id: String, subclient_url: String) {
